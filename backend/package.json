@@ -1,0 +1,30 @@
+{
+  "name": "nestleERP-backend",
+  "version": "1.0.0",
+  "description": "Backend foundation for the nestleERP monorepo",
+  "main": "app.js",
+  "scripts": {
+    "dev": "nodemon app.js",
+    "test": "jest --runInBand --detectOpenHandles"
+  },
+  "keywords": [
+    "nestleERP",
+    "express",
+    "mongodb"
+  ],
+  "license": "MIT",
+  "author": "Group 25 TS Academy",
+  "private": true,
+  "dependencies": {
+    "cors": "^2.8.6",
+    "dotenv": "^16.4.5",
+    "express": "^4.21.2",
+    "helmet": "^8.3.0",
+    "mongoose": "^8.8.2"
+  },
+  "devDependencies": {
+    "jest": "^30.5.2",
+    "nodemon": "^3.1.14",
+    "supertest": "^7.2.2"
+  }
+}
