@@ -374,19 +374,19 @@ The product listing must support pagination to ensure that product results can b
 
 ### Product Management Access
 
-| Feature | User | Inventory Manager | Super Admin |
-|---|---|---|---|
-| View products | Yes | Yes | Yes |
-| Search products | Yes | Yes | Yes |
-| Filter products | Yes | Yes | Yes |
-| Sort products | Yes | Yes | Yes |
-| Pagination | Yes | Yes | Yes |
-| Create products | No | Yes | Yes |
-| Update products | No | Yes | Yes |
-| Delete products | No | Yes | Yes |
-| Manage staff | No | No | Yes |
-| Manage administrative roles | No | No | Yes |
-| View activity/logs | No | As authorized | Yes |
+| Feature                     | User | Inventory Manager | Super Admin |
+| --------------------------- | ---- | ----------------- | ----------- |
+| View products               | Yes  | Yes               | Yes         |
+| Search products             | Yes  | Yes               | Yes         |
+| Filter products             | Yes  | Yes               | Yes         |
+| Sort products               | Yes  | Yes               | Yes         |
+| Pagination                  | Yes  | Yes               | Yes         |
+| Create products             | No   | Yes               | Yes         |
+| Update products             | No   | Yes               | Yes         |
+| Delete products             | No   | Yes               | Yes         |
+| Manage staff                | No   | No                | Yes         |
+| Manage administrative roles | No   | No                | Yes         |
+| View activity/logs          | No   | As authorized     | Yes         |
 
 **Note:** This table represents the proposed MVP permission model. The final implementation must enforce permissions on the backend, not only in the frontend interface.
 
@@ -432,16 +432,16 @@ GET /api/products
 
 ### Proposed Query Parameters
 
-| Parameter | Description | Example |
-|---|---|---|
-| `search` | Search by product name or ID | `search=phone` |
-| `category` | Filter by category | `category=electronics` |
-| `minPrice` | Minimum product price | `minPrice=1000` |
-| `maxPrice` | Maximum product price | `maxPrice=50000` |
-| `sortBy` | Field used for sorting | `sortBy=price` |
-| `sortOrder` | Sorting direction | `sortOrder=asc` |
-| `page` | Page number | `page=1` |
-| `limit` | Number of results per page | `limit=10` |
+| Parameter   | Description                  | Example                |
+| ----------- | ---------------------------- | ---------------------- |
+| `search`    | Search by product name or ID | `search=phone`         |
+| `category`  | Filter by category           | `category=electronics` |
+| `minPrice`  | Minimum product price        | `minPrice=1000`        |
+| `maxPrice`  | Maximum product price        | `maxPrice=50000`       |
+| `sortBy`    | Field used for sorting       | `sortBy=price`         |
+| `sortOrder` | Sorting direction            | `sortOrder=asc`        |
+| `page`      | Page number                  | `page=1`               |
+| `limit`     | Number of results per page   | `limit=10`             |
 
 The parameters above are proposed API conventions and should be finalized by the backend team before implementation.
 
@@ -460,10 +460,10 @@ GET /api/products?search=phone&sortBy=price&sortOrder=asc&page=1&limit=10
   "data": {
     "products": [],
     "pagination": {
-	"page": 1,
-	"limit": 10,
-	"totalItems": 0,
-	"totalPages": 0
+      "page": 1,
+      "limit": 10,
+      "totalItems": 0,
+      "totalPages": 0
     }
   }
 }
@@ -577,13 +577,13 @@ The exact frontend structure will be established as frontend development progres
 
 The backend is a Node.js and Express.js application.
 
-| Technology | Purpose |
-|---|---|
-| Node.js | JavaScript runtime |
-| Express.js | Backend web framework |
-| MongoDB | Database |
-| Mongoose | MongoDB object modeling, where used |
-| JavaScript | Backend development language |
+| Technology | Purpose                             |
+| ---------- | ----------------------------------- |
+| Node.js    | JavaScript runtime                  |
+| Express.js | Backend web framework               |
+| MongoDB    | Database                            |
+| Mongoose   | MongoDB object modeling, where used |
+| JavaScript | Backend development language        |
 
 ### Frontend
 
@@ -814,11 +814,11 @@ The platform is expected to support role-based permissions for administrative op
 
 ### Proposed Permission Levels
 
-| Role | Access Level |
-|---|---|
-| User | Product discovery |
-| Inventory Manager | Product management |
-| Super Admin | Administrative and product management |
+| Role              | Access Level                          |
+| ----------------- | ------------------------------------- |
+| User              | Product discovery                     |
+| Inventory Manager | Product management                    |
+| Super Admin       | Administrative and product management |
 
 The exact authentication implementation and role-management workflow should be finalized before these features are developed.
 
@@ -870,13 +870,13 @@ This workflow is intended to improve collaboration, code quality, and integratio
 
 The project will use the following branch structure:
 
-| Branch | Purpose |
-|---|---|
-| `main` | Stable and approved release code |
-| `develop` | Shared integration and testing branch |
-| `feature/*` | Individual feature development |
-| `bugfix/*` | Bug fixes |
-| `hotfix/*` | Urgent fixes, where required and agreed |
+| Branch      | Purpose                                 |
+| ----------- | --------------------------------------- |
+| `main`      | Stable and approved release code        |
+| `develop`   | Shared integration and testing branch   |
+| `feature/*` | Individual feature development          |
+| `bugfix/*`  | Bug fixes                               |
+| `hotfix/*`  | Urgent fixes, where required and agreed |
 
 ### Main Branch
 
@@ -1185,6 +1185,7 @@ The checklist should be updated as features are implemented and verified.
 **Architecture:** Monorepo
 
 **Applications:**
+
 - Backend
 - Frontend
 
