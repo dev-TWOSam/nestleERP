@@ -527,11 +527,30 @@ nestleERP/
 │   └── package-lock.json
 │
 ├── frontend/
-│   ├── [Frontend application files]
+│   ├── index.html
+│   ├── pages/
+│   │   ├── admin-login.html
+│   │   ├── dashboard.html
+│   │   ├── products.html
+│   │   └── product-details.html
+│   ├── css/
+│   │   ├── main.css
+│   │   ├── admin-login.css
+│   │   ├── dashboard.css
+│   │   └── products.css
+│   ├── js/
+│   │   ├── config.js
+│   │   ├── api.js
+│   │   ├── mockData.js
+│   │   ├── main.js
+│   │   ├── admin-login.js
+│   │   ├── dashboard.js
+│   │   └── products.js
+│   ├── assets/
+│   │   ├── images/
+│   │   └── icons/
 │   ├── .gitignore
-│   ├── README.md
-│   ├── package.json
-│   └── package-lock.json
+│   └── README.md
 │
 ├── .gitignore
 ├── README.md
@@ -567,7 +586,62 @@ The frontend application is responsible for:
 - Integration with backend APIs.
 - Client-side validation and user feedback.
 
-The exact frontend structure will be established as frontend development progresses.
+### Frontend Project Structure
+
+The frontend will use **HTML, CSS, and JavaScript without a frontend framework**.
+
+The frontend files should be organized so that page markup, styling, JavaScript logic, reusable assets, API communication, and temporary mock data remain clearly separated.
+
+```text
+frontend/
+│
+├── index.html
+│
+├── pages/
+│   ├── admin-login.html
+│   ├── dashboard.html
+│   ├── products.html
+│   └── product-details.html
+│
+├── css/
+│   ├── main.css
+│   ├── admin-login.css
+│   ├── dashboard.css
+│   └── products.css
+│
+├── js/
+│   ├── config.js
+│   ├── api.js
+│   ├── mockData.js
+│   ├── main.js
+│   ├── admin-login.js
+│   ├── dashboard.js
+│   └── products.js
+│
+├── assets/
+│   ├── images/
+│   └── icons/
+│
+├── .gitignore
+└── README.md
+```
+
+#### Folder Responsibilities
+
+- `index.html` — public landing page and product discovery entry point.
+- `pages/` — additional frontend pages such as admin login, dashboard, product listing, and product details.
+- `css/` — shared and page-specific stylesheets.
+- `js/config.js` — central frontend configuration such as the backend API base URL.
+- `js/api.js` — reusable functions for communicating with backend endpoints.
+- `js/mockData.js` — temporary mock product data used while backend endpoints are unavailable.
+- `js/main.js` — shared frontend behaviour.
+- `js/admin-login.js` — administrative login logic.
+- `js/dashboard.js` — dashboard-specific behaviour.
+- `js/products.js` — product search, filtering, sorting, pagination, and rendering logic.
+- `assets/images/` — project images and product placeholders.
+- `assets/icons/` — icons used by the frontend interface.
+
+Frontend developers should keep their assigned features within the appropriate files and avoid unnecessary edits to unrelated files in order to reduce merge conflicts.
 
 ---
 
@@ -587,9 +661,22 @@ The backend is a Node.js and Express.js application.
 
 ### Frontend
 
-The frontend will be maintained as a separate application within the monorepo.
+The frontend will be built with **HTML, CSS, and JavaScript** and maintained as a separate application inside the monorepo.
 
-The final frontend framework, libraries, and tooling should be documented here once confirmed by the frontend/software leads.
+No frontend framework is required for the MVP.
+
+| Technology | Purpose |
+| ---------- | ------- |
+| HTML5 | Defines the structure and semantic content of frontend pages |
+| CSS3 | Handles layout, responsive design, styling, and visual presentation |
+| JavaScript (ES6+) | Handles client-side behaviour, DOM manipulation, form validation, search controls, filtering, sorting, pagination, and API integration |
+| Fetch API | Communicates with the backend REST API |
+| Browser Local Storage / Session Storage | Stores temporary client-side information where appropriate, such as administrative session data or UI preferences |
+| Git | Version control |
+| GitHub | Collaboration, branches, Pull Requests, and code review |
+| Visual Studio Code | Recommended code editor |
+
+The frontend should use **vanilla JavaScript modules and reusable functions** where practical so that API communication, rendering logic, validation, and page behaviour remain maintainable.
 
 ### Development Tools
 
@@ -665,7 +752,52 @@ npm install
 
 ### Frontend Dependencies
 
-Frontend installation instructions will be added when the frontend application setup is finalized.
+The MVP frontend uses **HTML, CSS, and vanilla JavaScript**, so no frontend framework or runtime dependency is required to build the user interface.
+
+Frontend developers do not need to run `npm install` inside the `frontend/` directory unless the team later introduces an approved development tool or library.
+
+The frontend relies primarily on browser-native features:
+
+- HTML5.
+- CSS3.
+- JavaScript ES6+.
+- DOM APIs.
+- Fetch API for backend communication.
+- Local Storage or Session Storage where appropriate.
+
+#### Running the Frontend Locally
+
+The frontend can be opened directly in a browser for simple static pages. However, using a local development server is recommended because JavaScript modules and API requests work more reliably through HTTP.
+
+A recommended option for Visual Studio Code is the **Live Server** extension.
+
+After installing Live Server:
+
+1. Open the `frontend/` folder in Visual Studio Code.
+2. Open `index.html`.
+3. Right-click the file.
+4. Select **Open with Live Server**.
+
+The frontend will normally open on a local address similar to:
+
+```text
+http://127.0.0.1:5500/
+```
+
+The exact port may differ depending on the developer's local environment.
+
+#### Backend API Configuration
+
+The frontend should keep the backend API base URL in one configuration file, for example:
+
+```javascript
+// frontend/js/config.js
+export const API_BASE_URL = "http://localhost:5000/api";
+```
+
+Frontend code should import and reuse this value instead of hardcoding backend URLs in multiple files.
+
+While backend endpoints are still under development, the frontend team may use `js/mockData.js` to simulate product data and continue building the interface. Once the backend API is available, mock data should be replaced with requests made through the shared API service.
 
 ---
 
@@ -1144,11 +1276,11 @@ Developers should aim to produce code that is:
 
 **Project Phase:** MVP Development
 
-**Current Application Foundation:** Backend
+**Current Application Foundation:** Backend and Frontend Setup
 
 The backend application is established as the initial application foundation for the project.
 
-The frontend application will be developed and integrated as a separate application within the monorepo.
+The frontend application is being developed with HTML, CSS, and JavaScript as a separate application within the monorepo.
 
 ### Development Progress
 
