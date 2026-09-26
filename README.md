@@ -528,16 +528,23 @@ nestleERP/
 │
 ├── frontend/
 │   ├── index.html
-│   ├── pages/
+│   ├──  pages/
 │   │   ├── admin-login.html
 │   │   ├── dashboard.html
 │   │   ├── products.html
-│   │   └── product-details.html
+│   │   ├── product-details.html
+│   │   ├── admin-products.html
+│   │   ├── product-form.html
+│   │   └── products.html
 │   ├── css/
 │   │   ├── main.css
 │   │   ├── admin-login.css
 │   │   ├── dashboard.css
-│   │   └── products.css
+│   │   ├── products.css
+│   │   ├── admin-products.css
+│   │   ├── product-form.css
+│   │   ├── product-details.css
+│   │   └── home.css
 │   ├── js/
 │   │   ├── config.js
 │   │   ├── api.js
@@ -545,12 +552,15 @@ nestleERP/
 │   │   ├── main.js
 │   │   ├── admin-login.js
 │   │   ├── dashboard.js
-│   │   └── products.js
+│   │   ├── products.js
+│   │   ├── admin-products.js
+│   │   ├── product-form.js
+│   │   ├── home.js
+│   │   └── product-details.js
 │   ├── assets/
 │   │   ├── images/
-│   │   └── icons/
-│   ├── .gitignore
-│   └── README.md
+│   │   ├── icons/
+│   └── └── README.md
 │
 ├── .gitignore
 ├── README.md
@@ -602,12 +612,19 @@ frontend/
 │   ├── dashboard.html
 │   ├── products.html
 │   └── product-details.html
+│   ├── admin-products.html
+│   ├── product-form.html
+│   └── products.html
 │
 ├── css/
 │   ├── main.css
 │   ├── admin-login.css
 │   ├── dashboard.css
-│   └── products.css
+│   ├── products.css
+│   ├── admin-products.css
+│   ├── product-form.css
+│   ├── product-details.css
+│   └── home.css
 │
 ├── js/
 │   ├── config.js
@@ -616,11 +633,16 @@ frontend/
 │   ├── main.js
 │   ├── admin-login.js
 │   ├── dashboard.js
-│   └── products.js
+│   ├── products.js
+│   ├── admin-products.js
+│   ├── product-form.js
+│   ├── home.js
+│   └── product-details.js
 │
 ├── assets/
 │   ├── images/
-│   └── icons/
+│   ├── icons/
+│  └── README.md
 │
 ├── .gitignore
 └── README.md
