@@ -13,6 +13,7 @@ const nigeriaStates = [
   "Edo",
   "Ekiti",
   "Enugu",
+  "FCT",
   "Gombe",
   "Imo",
   "Jigawa",

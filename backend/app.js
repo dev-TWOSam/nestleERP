@@ -3,6 +3,7 @@ require("dotenv").config();
 const express = require("express");
 const cors = require("cors");
 const helmet = require("helmet");
+const productController = require("./src/controllers/products");
 
 const app = express();
 
@@ -17,6 +18,13 @@ app.get("/health", (req, res) => {
     timestamp: new Date().toISOString(),
   });
 });
+
+app.get("/api/products", productController.getAllProducts);
+app.get("/api/products/category/:category", productController.getProductsByCategory);
+app.get("/api/products/:id", productController.getProductById);
+app.post("/api/products", productController.createProduct);
+app.put("/api/products/:id", productController.updateProduct);
+app.delete("/api/products/:id", productController.deleteProduct);
 
 const startServer = (port) => {
   const server = app.listen(port, () => {
