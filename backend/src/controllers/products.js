@@ -1,6 +1,8 @@
 const Product = require('../models/products');
 const upload = require('../middleware/upload');
 
+
+//Creat-product endpoint
 exports.createProduct = async (req, res) => {
     upload.single('image')(req, res, async (err) => {
         if(err)
@@ -44,6 +46,7 @@ exports.createProduct = async (req, res) => {
 
 };
 
+//Get-all-products endpoint
 exports.getAllProducts = async (req, res) => {
     try{
         const products = await Product.find();
@@ -58,6 +61,7 @@ exports.getAllProducts = async (req, res) => {
     }
 };
 
+//Search-filter endpoint
 exports.getProductsByCategory = async (req, res) => {
     try {
         const { category } = req.params;
@@ -84,6 +88,7 @@ exports.getProductsByCategory = async (req, res) => {
     }
 };
 
+//Get-product-by-ID endpoint
 exports.getProductById = async (req, res) => {
     try{
         //Grab the ID from the req parameter
@@ -107,6 +112,7 @@ exports.getProductById = async (req, res) => {
     }
 };
 
+//Update-product endpoint
 exports.updateProduct = async (req, res) => {
     try{
         //Grab the ID
@@ -149,6 +155,7 @@ exports.updateProduct = async (req, res) => {
     }
 };
 
+//Delete-product endpoint
 exports.deleteProduct = async (req, res) => {
     try{
         //Grab the product ID
