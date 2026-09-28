@@ -1,8 +1,8 @@
 /**
  * Shared frontend configuration for nestleERP.
  *
- * Keep environment-specific values and shared endpoint paths here so feature
- * files do not hardcode backend URLs throughout the application.
+ * Keep environment-specific values and backend endpoint paths here so feature
+ * files never need to hardcode API URLs.
  */
 
 const DEFAULT_API_ORIGIN = "http://localhost:5000";
@@ -31,20 +31,26 @@ export const APP_CONFIG = Object.freeze({
     accessToken: "nestleERP.accessToken",
     currentUser: "nestleERP.currentUser",
   }),
+  roles: Object.freeze({
+    user: "user",
+    inventoryManager: "inventory-manager",
+    superAdmin: "super-admin",
+  }),
 });
 
 export const API_BASE_URL = `${APP_CONFIG.apiOrigin}${APP_CONFIG.apiPrefix}`;
 
 /**
- * Shared endpoint map.
- *
- * `/health` exists in the current backend.
- * The `/api/...` paths reflect the frontend contract currently planned for the
- * project and must be confirmed against the backend implementation before final
- * integration.
+ * Endpoint map based on the backend routes currently implemented in this
+ * repository.
  */
 export const API_ENDPOINTS = Object.freeze({
   health: `${APP_CONFIG.apiOrigin}/health`,
   products: `${API_BASE_URL}/products`,
-  authLogin: `${API_BASE_URL}/auth/login`,
+  productById: (productId) =>
+    `${API_BASE_URL}/products/${encodeURIComponent(productId)}`,
+  productsByCategory: (category) =>
+    `${API_BASE_URL}/products/category/${encodeURIComponent(category)}`,
+  users: `${API_BASE_URL}/users`,
+  userLogin: `${API_BASE_URL}/users/login`,
 });

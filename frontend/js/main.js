@@ -1,4 +1,9 @@
 import { APP_CONFIG } from "./config.js";
+import {
+  clearAuthSession,
+  getCurrentUser,
+  isAuthenticated,
+} from "./api.js";
 
 /**
  * Shared DOM helpers used across frontend pages.
@@ -38,6 +43,7 @@ export function clearPageMessage(
 
   container.textContent = "";
   container.removeAttribute("data-type");
+  container.removeAttribute("role");
   container.hidden = true;
 }
 
@@ -54,10 +60,14 @@ export function setButtonLoading(
   }
 
   if (isLoading) {
-    button.dataset.originalText = button.textContent;
+    if (!button.dataset.originalText) {
+      button.dataset.originalText = button.textContent;
+    }
+
     button.textContent = loadingText;
     button.disabled = true;
     button.setAttribute("aria-busy", "true");
+    button.classList.add("is-loading");
     return;
   }
 
@@ -68,6 +78,25 @@ export function setButtonLoading(
 
   button.disabled = false;
   button.removeAttribute("aria-busy");
+  button.classList.remove("is-loading");
+}
+
+/**
+ * Applies the official shared logo to elements marked with `data-app-logo`.
+ * A page may still provide its own src explicitly if needed.
+ */
+function initializeSharedLogo() {
+  selectAll("[data-app-logo]").forEach((image) => {
+    if (!image.getAttribute("src")) {
+      image.src = APP_CONFIG.assets.logoUrl;
+    }
+
+    if (!image.getAttribute("alt")) {
+      image.alt = `${APP_CONFIG.name} logo`;
+    }
+
+    image.classList.add("site-logo");
+  });
 }
 
 function updateCurrentYear() {
@@ -96,15 +125,76 @@ function markCurrentNavigationLink() {
   });
 }
 
+/**
+ * Updates UI visibility from the stored JWT claims.
+ * This controls presentation only; the backend still enforces authorization.
+ *
+ * Supported hooks:
+ *   data-auth-only
+ *   data-guest-only
+ *   data-role="inventory-manager,super-admin"
+ *   data-current-user-email
+ */
+function applyAuthenticationState() {
+  const authenticated = isAuthenticated();
+  const user = authenticated ? getCurrentUser() : null;
+
+  document.documentElement.dataset.authenticated = String(authenticated);
+
+  if (user?.role) {
+    document.documentElement.dataset.userRole = user.role;
+  } else {
+    delete document.documentElement.dataset.userRole;
+  }
+
+  selectAll("[data-auth-only]").forEach((element) => {
+    element.hidden = !authenticated;
+  });
+
+  selectAll("[data-guest-only]").forEach((element) => {
+    element.hidden = authenticated;
+  });
+
+  selectAll("[data-role]").forEach((element) => {
+    const allowedRoles = element.dataset.role
+      .split(",")
+      .map((role) => role.trim())
+      .filter(Boolean);
+
+    element.hidden = !user?.role || !allowedRoles.includes(user.role);
+  });
+
+  selectAll("[data-current-user-email]").forEach((element) => {
+    element.textContent = user?.email || "";
+  });
+}
+
+function initializeLogoutControls() {
+  selectAll("[data-logout]").forEach((button) => {
+    button.addEventListener("click", () => {
+      clearAuthSession();
+      applyAuthenticationState();
+
+      document.dispatchEvent(new CustomEvent("nestleERP:logout"));
+    });
+  });
+}
+
 function initializeFrontend() {
   document.documentElement.dataset.app = APP_CONFIG.name;
+
+  initializeSharedLogo();
   updateCurrentYear();
   markCurrentNavigationLink();
+  applyAuthenticationState();
+  initializeLogoutControls();
 
   document.dispatchEvent(
     new CustomEvent("nestleERP:ready", {
       detail: {
         appName: APP_CONFIG.name,
+        authenticated: isAuthenticated(),
+        user: getCurrentUser(),
       },
     }),
   );

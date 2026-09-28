@@ -7,6 +7,7 @@
   --color-focus: #222;
   --color-error: #b42318;
   --color-success: #067647;
+  --color-warning: #b54708;
 
   --font-family-base: Arial, Helvetica, sans-serif;
 
@@ -101,8 +102,6 @@ video {
   max-width: 100%;
 }
 
-/* Shared project logo. Page owners should reuse this class rather than
-   defining separate logo dimensions in page-specific stylesheets. */
 .site-logo {
   display: block;
   width: 160px;
@@ -133,6 +132,14 @@ textarea {
   resize: vertical;
 }
 
+input:disabled,
+select:disabled,
+textarea:disabled {
+  cursor: not-allowed;
+  background: var(--color-surface);
+  opacity: 0.75;
+}
+
 :focus-visible {
   outline: 3px solid var(--color-focus);
   outline-offset: 3px;
@@ -151,6 +158,19 @@ textarea {
   padding-block: var(--space-7);
 }
 
+.stack {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.cluster {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-3);
+}
+
 .button {
   display: inline-flex;
   min-height: 44px;
@@ -167,13 +187,41 @@ textarea {
   text-decoration: none;
 }
 
-.button:hover {
+.button:hover:not(:disabled) {
   opacity: 0.9;
 }
 
 .button--secondary {
   color: #222;
   background: #fff;
+}
+
+.button.is-loading,
+.button[aria-busy="true"] {
+  cursor: progress;
+}
+
+.form-field {
+  display: grid;
+  gap: var(--space-2);
+}
+
+.form-label {
+  font-weight: 700;
+}
+
+.form-help {
+  margin: 0;
+  color: var(--color-muted);
+  font-size: 14px;
+  line-height: 1.4;
+}
+
+.form-error {
+  margin: 0;
+  color: var(--color-error);
+  font-size: 14px;
+  line-height: 1.4;
 }
 
 .page-message {
@@ -194,6 +242,11 @@ textarea {
   border-color: currentColor;
 }
 
+.page-message[data-type="warning"] {
+  color: var(--color-warning);
+  border-color: currentColor;
+}
+
 .is-active {
   font-weight: 700;
 }
@@ -208,4 +261,16 @@ textarea {
   clip: rect(0, 0, 0, 0) !important;
   white-space: nowrap !important;
   border: 0 !important;
+}
+
+@media (max-width: 720px) {
+  h1,
+  h2,
+  h3 {
+    font-size: clamp(32px, 9vw, 48px);
+  }
+
+  .page-section {
+    padding-block: var(--space-6);
+  }
 }
