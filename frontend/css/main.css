@@ -51,10 +51,36 @@ h2,
 h3 {
   margin-top: 0;
   font-family: Arial, Helvetica, sans-serif;
-  font-size: 48px;
   font-weight: 700;
   letter-spacing: -0.02em;
 }
+
+h1 {
+  font-size: 64px;
+}
+
+h2 {
+  font-size: 48px;
+}
+
+h3 {
+  font-size: 36px;
+}
+
+@media (max-width: 720px) {
+  h1 {
+    font-size: clamp(40px, 10vw, 56px);
+  }
+
+  h2 {
+    font-size: clamp(34px, 8vw, 44px);
+  }
+
+  h3 {
+    font-size: clamp(28px, 7vw, 36px);
+  }
+}
+
 
 h4,
 h5,
@@ -263,14 +289,7 @@ textarea:disabled {
   border: 0 !important;
 }
 
-@media (max-width: 720px) {
-  h1,
-  h2,
-  h3 {
-    font-size: clamp(32px, 9vw, 48px);
-  }
-
   .page-section {
     padding-block: var(--space-6);
   }
-}
+
