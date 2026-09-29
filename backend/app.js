@@ -5,12 +5,15 @@ const cors = require("cors");
 const helmet = require("helmet");
 const productRoutes = require("./src/routes/productRoutes");
 const userRoutes = require("./src/routes/userRoutes");
+const connectDB = require("./src/config/databaseConfig");
 
 const app = express();
+connectDB();
 
 app.use(cors());
 app.use(helmet());
 app.use(express.json());
+
 
 app.get("/health", (req, res) => {
   res.status(200).json({
@@ -44,5 +47,7 @@ if (require.main === module) {
   const initialPort = Number(process.env.PORT) || 5000;
   startServer(initialPort);
 }
+
+
 
 module.exports = app;
