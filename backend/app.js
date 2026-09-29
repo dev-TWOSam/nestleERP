@@ -4,6 +4,7 @@ const express = require("express");
 const cors = require("cors");
 const helmet = require("helmet");
 const productRoutes = require("./src/routes/productRoutes");
+const userRoutes = require("./src/routes/userRoutes");
 
 const app = express();
 
@@ -20,6 +21,7 @@ app.get("/health", (req, res) => {
 });
 
 app.use("/api/products", productRoutes);
+app.use("/api/users", userRoutes);
 
 const startServer = (port) => {
   const server = app.listen(port, () => {
