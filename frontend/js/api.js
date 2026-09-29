@@ -4,7 +4,7 @@ import {
 } from "./config.js";
 
 /**
- * Error type used for failed API requests.
+ * Error type shared by all frontend API calls.
  */
 export class ApiError extends Error {
   constructor(message, { status = 0, data = null, cause = null } = {}) {
@@ -16,35 +16,142 @@ export class ApiError extends Error {
   }
 }
 
-function getStoredAccessToken() {
+function getStorage(name) {
   if (typeof window === "undefined") {
     return null;
   }
 
+  return window[name];
+}
+
+export function getStoredAccessToken() {
+  const sessionStorage = getStorage("sessionStorage");
+  const localStorage = getStorage("localStorage");
+
   return (
-    window.sessionStorage.getItem(APP_CONFIG.storageKeys.accessToken) ||
-    window.localStorage.getItem(APP_CONFIG.storageKeys.accessToken)
+    sessionStorage?.getItem(APP_CONFIG.storageKeys.accessToken) ||
+    localStorage?.getItem(APP_CONFIG.storageKeys.accessToken) ||
+    null
   );
 }
 
-function buildQueryString(params = {}) {
-  const searchParams = new URLSearchParams();
+function decodeBase64Url(value) {
+  const normalized = value.replace(/-/g, "+").replace(/_/g, "/");
+  const padded = normalized.padEnd(
+    normalized.length + ((4 - (normalized.length % 4)) % 4),
+    "=",
+  );
 
-  Object.entries(params).forEach(([key, value]) => {
-    if (value === undefined || value === null || value === "") {
+  return decodeURIComponent(
+    Array.from(atob(padded))
+      .map((character) =>
+        `%${character.charCodeAt(0).toString(16).padStart(2, "0")}`,
+      )
+      .join(""),
+  );
+}
+
+/**
+ * Reads the non-sensitive claims from the JWT returned by /api/users/login.
+ * This is used for UI state only. Backend authorization remains authoritative.
+ */
+export function decodeAccessToken(token = getStoredAccessToken()) {
+  if (!token || typeof token !== "string") {
+    return null;
+  }
+
+  try {
+    const [, payload] = token.split(".");
+
+    if (!payload) {
+      return null;
+    }
+
+    return JSON.parse(decodeBase64Url(payload));
+  } catch {
+    return null;
+  }
+}
+
+export function saveAuthSession({ accessToken, user, remember = false }) {
+  const localStorage = getStorage("localStorage");
+  const sessionStorage = getStorage("sessionStorage");
+
+  if (!localStorage || !sessionStorage) {
+    return;
+  }
+
+  const storage = remember ? localStorage : sessionStorage;
+  const otherStorage = remember ? sessionStorage : localStorage;
+
+  otherStorage.removeItem(APP_CONFIG.storageKeys.accessToken);
+  otherStorage.removeItem(APP_CONFIG.storageKeys.currentUser);
+
+  if (accessToken) {
+    storage.setItem(APP_CONFIG.storageKeys.accessToken, accessToken);
+  }
+
+  const sessionUser = user || decodeAccessToken(accessToken);
+
+  if (sessionUser) {
+    storage.setItem(
+      APP_CONFIG.storageKeys.currentUser,
+      JSON.stringify(sessionUser),
+    );
+  }
+}
+
+export function clearAuthSession() {
+  const storages = [getStorage("localStorage"), getStorage("sessionStorage")];
+
+  storages.forEach((storage) => {
+    if (!storage) {
       return;
     }
 
-    if (Array.isArray(value)) {
-      value.forEach((item) => searchParams.append(key, item));
-      return;
-    }
-
-    searchParams.set(key, value);
+    storage.removeItem(APP_CONFIG.storageKeys.accessToken);
+    storage.removeItem(APP_CONFIG.storageKeys.currentUser);
   });
+}
 
-  const query = searchParams.toString();
-  return query ? `?${query}` : "";
+export function getCurrentUser() {
+  const sessionStorage = getStorage("sessionStorage");
+  const localStorage = getStorage("localStorage");
+
+  const rawUser =
+    sessionStorage?.getItem(APP_CONFIG.storageKeys.currentUser) ||
+    localStorage?.getItem(APP_CONFIG.storageKeys.currentUser);
+
+  if (rawUser) {
+    try {
+      return JSON.parse(rawUser);
+    } catch {
+      // Fall back to the token claims below.
+    }
+  }
+
+  return decodeAccessToken();
+}
+
+export function isAuthenticated() {
+  const token = getStoredAccessToken();
+  const user = decodeAccessToken(token);
+
+  if (!token || !user) {
+    return false;
+  }
+
+  if (user.exp && Date.now() >= user.exp * 1000) {
+    clearAuthSession();
+    return false;
+  }
+
+  return true;
+}
+
+export function hasRole(...allowedRoles) {
+  const user = getCurrentUser();
+  return Boolean(user?.role && allowedRoles.includes(user.role));
 }
 
 async function parseResponse(response) {
@@ -88,7 +195,7 @@ export async function apiRequest(
   } = {},
 ) {
   const controller = new AbortController();
-  const timeoutId = window.setTimeout(() => controller.abort(), timeoutMs);
+  const timeoutId = globalThis.setTimeout(() => controller.abort(), timeoutMs);
 
   const requestHeaders = new Headers({
     Accept: "application/json",
@@ -98,9 +205,12 @@ export async function apiRequest(
   if (requiresAuth) {
     const accessToken = getStoredAccessToken();
 
-    if (accessToken) {
-      requestHeaders.set("Authorization", `Bearer ${accessToken}`);
+    if (!accessToken) {
+      globalThis.clearTimeout(timeoutId);
+      throw new ApiError("Authentication required.", { status: 401 });
     }
+
+    requestHeaders.set("Authorization", `Bearer ${accessToken}`);
   }
 
   let requestBody = body;
@@ -126,6 +236,10 @@ export async function apiRequest(
     const data = await parseResponse(response);
 
     if (!response.ok) {
+      if (response.status === 401) {
+        clearAuthSession();
+      }
+
       throw new ApiError(
         getErrorMessage(
           data,
@@ -158,60 +272,34 @@ export async function apiRequest(
       },
     );
   } finally {
-    window.clearTimeout(timeoutId);
+    globalThis.clearTimeout(timeoutId);
   }
 }
 
-/**
- * Session helpers. The backend login response shape is not final yet, so these
- * functions deliberately store values only when a feature explicitly calls them.
- */
-export function saveAuthSession({ accessToken, user, remember = false }) {
-  const storage = remember ? window.localStorage : window.sessionStorage;
-  const otherStorage = remember ? window.sessionStorage : window.localStorage;
-
-  otherStorage.removeItem(APP_CONFIG.storageKeys.accessToken);
-  otherStorage.removeItem(APP_CONFIG.storageKeys.currentUser);
-
-  if (accessToken) {
-    storage.setItem(APP_CONFIG.storageKeys.accessToken, accessToken);
+function objectToProductFormData(product) {
+  if (product instanceof FormData) {
+    return product;
   }
 
-  if (user) {
-    storage.setItem(APP_CONFIG.storageKeys.currentUser, JSON.stringify(user));
-  }
-}
+  const formData = new FormData();
 
-export function clearAuthSession() {
-  [window.localStorage, window.sessionStorage].forEach((storage) => {
-    storage.removeItem(APP_CONFIG.storageKeys.accessToken);
-    storage.removeItem(APP_CONFIG.storageKeys.currentUser);
+  Object.entries(product || {}).forEach(([key, value]) => {
+    if (value === undefined || value === null || value === "") {
+      return;
+    }
+
+    formData.append(key, value);
   });
-}
 
-export function getCurrentUser() {
-  const rawUser =
-    window.sessionStorage.getItem(APP_CONFIG.storageKeys.currentUser) ||
-    window.localStorage.getItem(APP_CONFIG.storageKeys.currentUser);
-
-  if (!rawUser) {
-    return null;
-  }
-
-  try {
-    return JSON.parse(rawUser);
-  } catch {
-    return null;
-  }
+  return formData;
 }
 
 /**
- * Shared API surface.
+ * Shared API surface mapped to the currently implemented backend routes.
  *
- * Only `health.check()` maps to an endpoint that currently exists in the
- * uploaded backend. Product and authentication methods are prepared for the
- * planned API contract and should be adjusted if the backend team finalizes
- * different paths or payloads.
+ * Current backend product listing does not yet implement the README's planned
+ * search, price filtering, sorting, or pagination query parameters. Category
+ * filtering is available through /api/products/category/:category.
  */
 export const api = Object.freeze({
   health: Object.freeze({
@@ -219,38 +307,56 @@ export const api = Object.freeze({
   }),
 
   products: Object.freeze({
-    list: (params = {}) =>
-      apiRequest(`${API_ENDPOINTS.products}${buildQueryString(params)}`),
+    list: () => apiRequest(API_ENDPOINTS.products),
+
+    listByCategory: (category) =>
+      apiRequest(API_ENDPOINTS.productsByCategory(category)),
 
     getById: (productId) =>
-      apiRequest(`${API_ENDPOINTS.products}/${encodeURIComponent(productId)}`),
+      apiRequest(API_ENDPOINTS.productById(productId)),
 
     create: (product) =>
       apiRequest(API_ENDPOINTS.products, {
         method: "POST",
-        body: product,
+        body: objectToProductFormData(product),
         requiresAuth: true,
       }),
 
     update: (productId, updates) =>
-      apiRequest(`${API_ENDPOINTS.products}/${encodeURIComponent(productId)}`, {
-        method: "PATCH",
+      apiRequest(API_ENDPOINTS.productById(productId), {
+        method: "PUT",
         body: updates,
         requiresAuth: true,
       }),
 
     remove: (productId) =>
-      apiRequest(`${API_ENDPOINTS.products}/${encodeURIComponent(productId)}`, {
+      apiRequest(API_ENDPOINTS.productById(productId), {
         method: "DELETE",
         requiresAuth: true,
       }),
   }),
 
-  auth: Object.freeze({
-    login: (credentials) =>
-      apiRequest(API_ENDPOINTS.authLogin, {
+  users: Object.freeze({
+    create: (user) =>
+      apiRequest(API_ENDPOINTS.users, {
+        method: "POST",
+        body: user,
+      }),
+
+    login: async (credentials, { remember = false } = {}) => {
+      const response = await apiRequest(API_ENDPOINTS.userLogin, {
         method: "POST",
         body: credentials,
-      }),
+      });
+
+      if (response?.token) {
+        saveAuthSession({
+          accessToken: response.token,
+          remember,
+        });
+      }
+
+      return response;
+    },
   }),
 });
