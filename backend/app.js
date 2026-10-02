@@ -8,9 +8,8 @@ app.use(express.json()); // Middleware to parse JSON request bodies
 const dotenv = require("dotenv");
 dotenv.config();
 
-// Import the database connection function and connect to the database
+// Import the database connection function
 const connectDB = require("./src/config/databaseConfig");
-connectDB();
 
 // Middleware to enable Cross-Origin Resource Sharing (CORS) and enable cors for all routes
 const cors = require("cors");
@@ -34,13 +33,15 @@ app.get("/health", (req, res) => {
   });
 });
 
-const startServer = (port) => {
+const startServer = async (port) => {
   if (!port) {
     console.error(
       "Error: No Port variable defined in your environment or .env file",
     );
     process.exit(1);
   }
+
+  await connectDB();
 
   const server = app.listen(port, () => {
     console.log(`nestleERP backend listening on port ${port}`);
