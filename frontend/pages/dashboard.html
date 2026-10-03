@@ -1,0 +1,283 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta
+      name="description"
+      content="nestleERP administrative dashboard for inventory and staff management."
+    />
+    <title>Admin Dashboard | nestleERP</title>
+
+    <link rel="stylesheet" href="../css/main.css" />
+    <link rel="stylesheet" href="../css/dashboard.css" />
+  </head>
+
+  <body class="dashboard-page">
+    <div class="dashboard-shell">
+      <aside class="dashboard-sidebar" id="dashboard-sidebar">
+        <div class="dashboard-sidebar__top">
+          <a class="dashboard-sidebar__brand" href="./dashboard.html" aria-label="nestleERP dashboard">
+            <img data-app-logo alt="nestleERP logo" />
+          </a>
+
+          <nav class="dashboard-nav" aria-label="Admin navigation">
+            <a class="dashboard-nav__link is-active" href="./dashboard.html" aria-current="page">
+              <span aria-hidden="true">▦</span>
+              Dashboard
+            </a>
+
+            <a class="dashboard-nav__link" href="./admin-products.html">
+              <span aria-hidden="true">□</span>
+              Products
+            </a>
+
+            <a
+              class="dashboard-nav__link"
+              href="#staff-management"
+              data-role="super-admin"
+              hidden
+            >
+              <span aria-hidden="true">◇</span>
+              Staff management
+            </a>
+          </nav>
+        </div>
+
+        <div class="dashboard-sidebar__footer">
+          <a class="dashboard-nav__link" href="../index.html">
+            <span aria-hidden="true">←</span>
+            Storefront
+          </a>
+
+          <button class="dashboard-nav__link dashboard-nav__button" id="sidebar-logout" type="button">
+          </button>
+        </div>
+      </aside>
+
+      <div class="dashboard-content">
+        <header class="dashboard-topbar">
+          <button
+            class="dashboard-topbar__menu"
+            id="sidebar-toggle"
+            type="button"
+            aria-controls="dashboard-sidebar"
+            aria-expanded="false"
+          >
+            <span class="visually-hidden">Toggle navigation</span>
+            ☰
+          </button>
+
+          <div class="dashboard-topbar__identity">
+            <div>
+              <span class="dashboard-topbar__email" data-current-user-name></span>
+              <span class="dashboard-role-badge" id="topbar-role">Staff</span>
+            </div>
+
+            <button class="button button--secondary dashboard-topbar__logout" id="topbar-logout" type="button">
+              Sign out
+            </button>
+          </div>
+        </header>
+
+        <main class="dashboard-main">
+          <div
+            id="dashboard-message"
+            class="page-message dashboard-message"
+            data-page-message
+            hidden
+          ></div>
+
+          <section class="dashboard-hero" aria-labelledby="dashboard-title">
+            <div>
+              <p class="dashboard-eyebrow">Administration</p>
+              <h1 id="dashboard-title">Dashboard</h1>
+              <p id="dashboard-welcome">
+                Review inventory activity and access the tools available to your role.
+              </p>
+            </div>
+
+            <div class="dashboard-hero__actions">
+              <a class="button button--secondary" href="./admin-products.html">View products</a>
+              <a class="button" href="./product-form.html">Add product</a>
+            </div>
+          </section>
+
+          <section class="dashboard-stats" aria-label="Dashboard summary">
+            <article class="dashboard-stat-card">
+              <span class="dashboard-stat-card__label">Products</span>
+              <strong class="dashboard-stat-card__value" id="product-count">—</strong>
+              <span class="dashboard-stat-card__meta">Current inventory records</span>
+            </article>
+
+            <article class="dashboard-stat-card">
+              <span class="dashboard-stat-card__label">Administrative staff</span>
+              <strong class="dashboard-stat-card__value" id="staff-count">—</strong>
+              <span class="dashboard-stat-card__meta" id="staff-count-meta">Visible to Super Admins</span>
+            </article>
+
+            <article class="dashboard-stat-card">
+              <span class="dashboard-stat-card__label">Your access</span>
+              <strong class="dashboard-stat-card__value dashboard-stat-card__role" id="access-role">—</strong>
+              <span class="dashboard-stat-card__meta" id="access-description">Role-based permissions</span>
+            </article>
+          </section>
+
+          <section class="dashboard-grid" aria-label="Administrative actions">
+            <article class="dashboard-panel dashboard-panel--quick-actions">
+              <div class="dashboard-panel__heading">
+                <div>
+                  <p class="dashboard-eyebrow">Quick actions</p>
+                  <h2>Inventory tools</h2>
+                </div>
+              </div>
+
+              <div class="dashboard-action-grid">
+                <a class="dashboard-action-card" href="./product-form.html">
+                  <span class="dashboard-action-card__icon" aria-hidden="true">+</span>
+                  <span>
+                    <strong>Add a product</strong>
+                    <small>Create a new inventory record.</small>
+                  </span>
+                </a>
+
+                <a class="dashboard-action-card" href="./admin-products.html">
+                  <span class="dashboard-action-card__icon" aria-hidden="true">▦</span>
+                  <span>
+                    <strong>Manage products</strong>
+                    <small>Review, update, or remove inventory records.</small>
+                  </span>
+                </a>
+
+                <a
+                  class="dashboard-action-card"
+                  href="#staff-management"
+                  data-role="super-admin"
+                  hidden
+                >
+                  <span class="dashboard-action-card__icon" aria-hidden="true">◇</span>
+                  <span>
+                    <strong>Manage staff</strong>
+                    <small>Review administrative accounts and roles.</small>
+                  </span>
+                </a>
+              </div>
+            </article>
+
+            <article class="dashboard-panel dashboard-panel--access">
+              <div class="dashboard-panel__heading">
+                <div>
+                  <p class="dashboard-eyebrow">Access control</p>
+                  <h2>Your permissions</h2>
+                </div>
+              </div>
+
+              <ul class="dashboard-permission-list" id="permission-list"></ul>
+            </article>
+          </section>
+
+          <section
+            class="dashboard-panel dashboard-staff"
+            id="staff-management"
+            data-role="super-admin"
+            hidden
+            aria-labelledby="staff-title"
+          >
+            <div class="dashboard-panel__heading dashboard-panel__heading--staff">
+              <div>
+                <p class="dashboard-eyebrow">Super Admin</p>
+                <h2 id="staff-title">Staff management</h2>
+                <p>
+                  Review staff accounts, search administrative users, and manage
+                  account access.
+                </p>
+              </div>
+
+              <button class="button button--secondary" id="refresh-staff" type="button">
+                Refresh
+              </button>
+            </div>
+
+            <div class="dashboard-staff__toolbar">
+              <div class="form-field">
+                <label class="form-label" for="staff-search">Search staff</label>
+                <input
+                  id="staff-search"
+                  type="search"
+                  placeholder="Name, email, role, or location"
+                  autocomplete="off"
+                />
+              </div>
+
+              <label class="dashboard-staff__standard-users" for="include-users">
+                <input id="include-users" type="checkbox" />
+                <span>Include standard users</span>
+              </label>
+            </div>
+
+            <div class="dashboard-table-wrap">
+              <div class="dashboard-table-scroll">
+                <table class="dashboard-table">
+                  <thead>
+                    <tr>
+                      <th scope="col">Name</th>
+                      <th scope="col">Email</th>
+                      <th scope="col">Role</th>
+                      <th scope="col">Location</th>
+                      <th scope="col">Admin access</th>
+                      <th scope="col">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody id="staff-table-body"></tbody>
+                </table>
+              </div>
+
+              <div class="dashboard-table-state" id="staff-loading">Loading staff accounts…</div>
+              <div class="dashboard-table-state" id="staff-empty" hidden>
+                No staff accounts match your current search.
+              </div>
+            </div>
+          </section>
+        </main>
+      </div>
+    </div>
+
+    <dialog class="dashboard-dialog" id="role-dialog">
+      <form class="dashboard-dialog__card" id="role-form" method="dialog">
+        <div class="dashboard-dialog__heading">
+          <div>
+            <p class="dashboard-eyebrow">Super Admin</p>
+            <h2>Manage staff role</h2>
+            <p id="role-dialog-user">Selected staff account</p>
+          </div>
+          <button class="dashboard-dialog__close" id="role-dialog-close" type="button" aria-label="Close">
+            ×
+          </button>
+        </div>
+
+        <input id="role-user-id" type="hidden" />
+
+        <div class="form-field">
+          <label class="form-label" for="role-select">Administrative role</label>
+          <select id="role-select" required>
+            <option value="user">User</option>
+            <option value="inventory-manager">Inventory Manager</option>
+            <option value="super-admin">Super Admin</option>
+          </select>
+          <p class="form-help">
+            Only the backend can enforce permissions. This control sends the requested
+            role to the protected Super Admin user endpoint.
+          </p>
+        </div>
+
+        <div class="dashboard-dialog__actions">
+          <button class="button button--secondary" id="role-cancel" type="button">Cancel</button>
+          <button class="button" id="role-save" type="submit">Save role</button>
+        </div>
+      </form>
+    </dialog>
+
+    <script type="module" src="../js/main.js"></script>
+    <script type="module" src="../js/dashboard.js"></script>
+  </body>
+</html>
