@@ -165,8 +165,22 @@ function applyAuthenticationState() {
   });
 
   selectAll("[data-current-user-email]").forEach((element) => {
-    element.textContent = user?.email || "";
-  });
+  element.textContent = user?.email || "";
+});
+
+selectAll("[data-current-user-name]").forEach((element) => {
+  const fullName = [
+    user?.firstName,
+    user?.lastName,
+  ]
+    .filter(Boolean)
+    .join(" ");
+
+  element.textContent =
+    fullName ||
+    user?.email ||
+    "Staff";
+});
 }
 
 function initializeLogoutControls() {

@@ -5,7 +5,7 @@
  * files never need to hardcode API URLs.
  */
 
-const DEFAULT_API_ORIGIN = "http://localhost:5000";
+const DEFAULT_API_ORIGIN = "http://localhost:4001";
 
 const runtimeConfig =
   typeof window !== "undefined" && window.NESTLE_ERP_CONFIG

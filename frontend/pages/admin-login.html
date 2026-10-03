@@ -1,0 +1,135 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta
+      name="description"
+      content="Secure staff sign-in for the nestleERP administration portal."
+    />
+    <title>Admin Login | nestleERP</title>
+
+    <link rel="stylesheet" href="../css/main.css" />
+    <link rel="stylesheet" href="../css/admin-login.css" />
+  </head>
+
+  <body class="admin-login-page">
+    <main class="admin-login" aria-labelledby="admin-login-title">
+      <section class="admin-login__brand" aria-label="nestleERP administration">
+        <div class="admin-login__brand-inner">
+          <a class="admin-login__logo-link" href="../index.html" aria-label="Go to nestleERP home">
+            <img class="admin-login__logo" data-app-logo alt="nestleERP logo" />
+          </a>
+
+          <div class="admin-login__brand-copy">
+            <p class="admin-login__eyebrow">Administration portal</p>
+            <h1>Welcome to <span class="admin-login__brand-name">NestleERP</span> portal</h1>
+            <p>Access your administrative dashboard to manage inventory and staff.</p>
+          </div>
+
+          <div class="admin-login__permission-list" aria-label="Administrative roles">
+            <article>
+              <span class="admin-login__permission-icon" aria-hidden="true">IM</span>
+              <div>
+                <h2>Inventory Manager</h2>
+                <p>Create, update, delete, and review inventory records.</p>
+              </div>
+            </article>
+
+            <article>
+              <span class="admin-login__permission-icon" aria-hidden="true">SA</span>
+              <div>
+                <h2>Super Admin</h2>
+                <p>Product management, staff and administrative access oversight.</p>
+              </div>
+            </article>
+          </div>
+        </div>
+      </section>
+
+      <section class="admin-login__panel">
+        <div class="admin-login__card">
+          <div class="admin-login__heading">
+            <p class="admin-login__eyebrow">Authorized staff only</p>
+            <h2 id="admin-login-title">Sign in</h2>
+            <p>Use your assigned staff email address and password.</p>
+          </div>
+
+          <div
+            id="login-message"
+            class="page-message admin-login__message"
+            data-page-message
+            hidden
+          ></div>
+
+          <form id="admin-login-form" class="admin-login__form" novalidate>
+            <div class="form-field">
+              <label class="form-label" for="email">Email address</label>
+              <input
+                id="email"
+                name="email"
+                type="email"
+                autocomplete="username"
+                placeholder="admin@example.com"
+                required
+                aria-describedby="email-error"
+              />
+              <p id="email-error" class="form-error" data-error-for="email" hidden></p>
+            </div>
+
+            <div class="form-field">
+              <label class="form-label" for="password">Password</label>
+
+              <div class="admin-login__password-field">
+                <input
+                  id="password"
+                  name="password"
+                  type="password"
+                  autocomplete="current-password"
+                  placeholder="Enter your password"
+                  required
+                  aria-describedby="password-error"
+                />
+                <button
+                  class="admin-login__password-toggle"
+                  id="toggle-password"
+                  type="button"
+                  aria-controls="password"
+                  aria-pressed="false"
+                >
+                  Show
+                </button>
+              </div>
+
+              <p
+                id="password-error"
+                class="form-error"
+                data-error-for="password"
+                hidden
+              ></p>
+            </div>
+
+            <label class="admin-login__remember" for="remember-me">
+              <input id="remember-me" name="remember" type="checkbox" />
+              <span>Keep me signed in on this device</span>
+            </label>
+
+            <button class="button admin-login__submit" id="login-button" type="submit">
+              Sign in to dashboard
+            </button>
+          </form>
+
+          <p class="admin-login__help">
+            Standard user accounts cannot access this portal. Contact a Super Admin
+            if your administrative role is incorrect.
+          </p>
+
+          <a class="admin-login__back-link" href="../index.html">← Back to storefront</a>
+        </div>
+      </section>
+    </main>
+
+    <script type="module" src="../js/main.js"></script>
+    <script type="module" src="../js/admin-login.js"></script>
+  </body>
+</html>

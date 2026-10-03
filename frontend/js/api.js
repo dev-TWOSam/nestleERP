@@ -3,187 +3,367 @@ import {
   APP_CONFIG,
 } from "./config.js";
 
-/**
- * Error type shared by all frontend API calls.
- */
+
+/* =========================================
+   API ERROR
+========================================= */
+
 export class ApiError extends Error {
-  constructor(message, { status = 0, data = null, cause = null } = {}) {
+  constructor(
+    message,
+    {
+      status = 0,
+      data = null,
+      cause = null,
+    } = {},
+  ) {
     super(message);
+
     this.name = "ApiError";
+
     this.status = status;
+
     this.data = data;
+
     this.cause = cause;
   }
 }
 
+
+/* =========================================
+   STORAGE
+========================================= */
+
 function getStorage(name) {
-  if (typeof window === "undefined") {
+  if (
+    typeof window === "undefined"
+  ) {
     return null;
   }
 
   return window[name];
 }
 
+
+/* =========================================
+   ACCESS TOKEN
+========================================= */
+
 export function getStoredAccessToken() {
-  const sessionStorage = getStorage("sessionStorage");
-  const localStorage = getStorage("localStorage");
+  const sessionStorage =
+    getStorage("sessionStorage");
+
+  const localStorage =
+    getStorage("localStorage");
 
   return (
-    sessionStorage?.getItem(APP_CONFIG.storageKeys.accessToken) ||
-    localStorage?.getItem(APP_CONFIG.storageKeys.accessToken) ||
+    sessionStorage?.getItem(
+      APP_CONFIG.storageKeys.accessToken,
+    ) ||
+    localStorage?.getItem(
+      APP_CONFIG.storageKeys.accessToken,
+    ) ||
     null
   );
 }
 
+
+/* =========================================
+   JWT DECODING
+========================================= */
+
 function decodeBase64Url(value) {
-  const normalized = value.replace(/-/g, "+").replace(/_/g, "/");
-  const padded = normalized.padEnd(
-    normalized.length + ((4 - (normalized.length % 4)) % 4),
-    "=",
-  );
+  const normalized =
+    value
+      .replace(/-/g, "+")
+      .replace(/_/g, "/");
+
+  const padded =
+    normalized.padEnd(
+      normalized.length +
+        ((4 -
+          (normalized.length % 4)) %
+          4),
+      "=",
+    );
 
   return decodeURIComponent(
-    Array.from(atob(padded))
-      .map((character) =>
-        `%${character.charCodeAt(0).toString(16).padStart(2, "0")}`,
+    Array.from(
+      atob(padded),
+    )
+      .map(
+        (character) =>
+          `%${character
+            .charCodeAt(0)
+            .toString(16)
+            .padStart(2, "0")}`,
       )
       .join(""),
   );
 }
 
-/**
- * Reads the non-sensitive claims from the JWT returned by /api/users/login.
- * This is used for UI state only. Backend authorization remains authoritative.
- */
-export function decodeAccessToken(token = getStoredAccessToken()) {
-  if (!token || typeof token !== "string") {
+
+export function decodeAccessToken(
+  token = getStoredAccessToken(),
+) {
+  if (
+    !token ||
+    typeof token !== "string"
+  ) {
     return null;
   }
 
   try {
-    const [, payload] = token.split(".");
+    const [, payload] =
+      token.split(".");
 
     if (!payload) {
       return null;
     }
 
-    return JSON.parse(decodeBase64Url(payload));
+    return JSON.parse(
+      decodeBase64Url(payload),
+    );
+
   } catch {
     return null;
   }
 }
 
-export function saveAuthSession({ accessToken, user, remember = false }) {
-  const localStorage = getStorage("localStorage");
-  const sessionStorage = getStorage("sessionStorage");
 
-  if (!localStorage || !sessionStorage) {
+/* =========================================
+   AUTH SESSION
+========================================= */
+
+export function saveAuthSession({
+  accessToken,
+  user,
+  remember = false,
+}) {
+  const localStorage =
+    getStorage("localStorage");
+
+  const sessionStorage =
+    getStorage("sessionStorage");
+
+  if (
+    !localStorage ||
+    !sessionStorage
+  ) {
     return;
   }
 
-  const storage = remember ? localStorage : sessionStorage;
-  const otherStorage = remember ? sessionStorage : localStorage;
+  const storage =
+    remember
+      ? localStorage
+      : sessionStorage;
 
-  otherStorage.removeItem(APP_CONFIG.storageKeys.accessToken);
-  otherStorage.removeItem(APP_CONFIG.storageKeys.currentUser);
+  const otherStorage =
+    remember
+      ? sessionStorage
+      : localStorage;
+
+  otherStorage.removeItem(
+    APP_CONFIG.storageKeys.accessToken,
+  );
+
+  otherStorage.removeItem(
+    APP_CONFIG.storageKeys.currentUser,
+  );
 
   if (accessToken) {
-    storage.setItem(APP_CONFIG.storageKeys.accessToken, accessToken);
+    storage.setItem(
+      APP_CONFIG.storageKeys.accessToken,
+      accessToken,
+    );
   }
 
-  const sessionUser = user || decodeAccessToken(accessToken);
+  const sessionUser =
+    user ||
+    decodeAccessToken(accessToken);
 
   if (sessionUser) {
     storage.setItem(
       APP_CONFIG.storageKeys.currentUser,
-      JSON.stringify(sessionUser),
+      JSON.stringify(
+        sessionUser,
+      ),
     );
   }
 }
 
+
 export function clearAuthSession() {
-  const storages = [getStorage("localStorage"), getStorage("sessionStorage")];
+  const storages = [
+    getStorage("localStorage"),
+    getStorage("sessionStorage"),
+  ];
 
-  storages.forEach((storage) => {
-    if (!storage) {
-      return;
-    }
+  storages.forEach(
+    (storage) => {
+      if (!storage) {
+        return;
+      }
 
-    storage.removeItem(APP_CONFIG.storageKeys.accessToken);
-    storage.removeItem(APP_CONFIG.storageKeys.currentUser);
-  });
+      storage.removeItem(
+        APP_CONFIG.storageKeys.accessToken,
+      );
+
+      storage.removeItem(
+        APP_CONFIG.storageKeys.currentUser,
+      );
+    },
+  );
 }
 
+
+/* =========================================
+   CURRENT USER
+========================================= */
+
 export function getCurrentUser() {
-  const sessionStorage = getStorage("sessionStorage");
-  const localStorage = getStorage("localStorage");
+  const sessionStorage =
+    getStorage("sessionStorage");
+
+  const localStorage =
+    getStorage("localStorage");
 
   const rawUser =
-    sessionStorage?.getItem(APP_CONFIG.storageKeys.currentUser) ||
-    localStorage?.getItem(APP_CONFIG.storageKeys.currentUser);
+    sessionStorage?.getItem(
+      APP_CONFIG.storageKeys.currentUser,
+    ) ||
+    localStorage?.getItem(
+      APP_CONFIG.storageKeys.currentUser,
+    );
 
   if (rawUser) {
     try {
-      return JSON.parse(rawUser);
+      return JSON.parse(
+        rawUser,
+      );
     } catch {
-      // Fall back to the token claims below.
+      // Fall back to JWT claims.
     }
   }
 
   return decodeAccessToken();
 }
 
-export function isAuthenticated() {
-  const token = getStoredAccessToken();
-  const user = decodeAccessToken(token);
 
-  if (!token || !user) {
+/* =========================================
+   AUTHENTICATION
+========================================= */
+
+export function isAuthenticated() {
+  const token =
+    getStoredAccessToken();
+
+  const user =
+    decodeAccessToken(token);
+
+  if (
+    !token ||
+    !user
+  ) {
     return false;
   }
 
-  if (user.exp && Date.now() >= user.exp * 1000) {
+  if (
+    user.exp &&
+    Date.now() >=
+      user.exp * 1000
+  ) {
     clearAuthSession();
+
     return false;
   }
 
   return true;
 }
 
-export function hasRole(...allowedRoles) {
-  const user = getCurrentUser();
-  return Boolean(user?.role && allowedRoles.includes(user.role));
+
+/* =========================================
+   ROLE CHECK
+========================================= */
+
+export function hasRole(
+  ...allowedRoles
+) {
+  const user =
+    getCurrentUser();
+
+  return Boolean(
+    user?.role &&
+      allowedRoles.includes(
+        user.role,
+      ),
+  );
 }
 
-async function parseResponse(response) {
-  if (response.status === 204) {
+
+/* =========================================
+   RESPONSE PARSER
+========================================= */
+
+async function parseResponse(
+  response,
+) {
+  if (
+    response.status === 204
+  ) {
     return null;
   }
 
-  const contentType = response.headers.get("content-type") || "";
+  const contentType =
+    response.headers.get(
+      "content-type",
+    ) || "";
 
-  if (contentType.includes("application/json")) {
+  if (
+    contentType.includes(
+      "application/json",
+    )
+  ) {
     return response.json();
   }
 
-  const text = await response.text();
+  const text =
+    await response.text();
+
   return text || null;
 }
 
-function getErrorMessage(data, fallback) {
+
+/* =========================================
+   ERROR MESSAGE
+========================================= */
+
+function getErrorMessage(
+  data,
+  fallback,
+) {
   if (!data) {
     return fallback;
   }
 
-  if (typeof data === "string") {
+  if (
+    typeof data === "string"
+  ) {
     return data;
   }
 
-  return data.message || data.error || fallback;
+  return (
+    data.message ||
+    data.error ||
+    fallback
+  );
 }
 
-/**
- * Reusable Fetch wrapper for all frontend API calls.
- */
+
+/* =========================================
+   MAIN API REQUEST
+========================================= */
+
 export async function apiRequest(
   url,
   {
@@ -191,52 +371,133 @@ export async function apiRequest(
     body,
     headers = {},
     requiresAuth = false,
-    timeoutMs = APP_CONFIG.requestTimeoutMs,
+    timeoutMs =
+      APP_CONFIG.requestTimeoutMs,
   } = {},
 ) {
-  const controller = new AbortController();
-  const timeoutId = globalThis.setTimeout(() => controller.abort(), timeoutMs);
+  const controller =
+    new AbortController();
 
-  const requestHeaders = new Headers({
-    Accept: "application/json",
-    ...headers,
-  });
+  const timeoutId =
+    globalThis.setTimeout(
+      () =>
+        controller.abort(),
+      timeoutMs,
+    );
+
+  const requestHeaders =
+    new Headers({
+      Accept:
+        "application/json",
+
+      ...headers,
+    });
+
+
+  /* =====================================
+     AUTHORIZATION
+  ===================================== */
 
   if (requiresAuth) {
-    const accessToken = getStoredAccessToken();
+    const accessToken =
+      getStoredAccessToken();
 
     if (!accessToken) {
-      globalThis.clearTimeout(timeoutId);
-      throw new ApiError("Authentication required.", { status: 401 });
+      globalThis.clearTimeout(
+        timeoutId,
+      );
+
+      throw new ApiError(
+        "Authentication required.",
+        {
+          status: 401,
+        },
+      );
     }
 
-    requestHeaders.set("Authorization", `Bearer ${accessToken}`);
+    requestHeaders.set(
+      "Authorization",
+      `Bearer ${accessToken}`,
+    );
   }
 
+
+  /* =====================================
+     BODY HANDLING
+  ===================================== */
+
   let requestBody = body;
+
+  const isFormData =
+    typeof FormData !==
+      "undefined" &&
+    body instanceof FormData;
+
+
+  /*
+    Only convert ordinary JavaScript
+    objects to JSON.
+
+    DO NOT manually set Content-Type
+    when using FormData.
+
+    The browser automatically adds:
+
+    multipart/form-data; boundary=...
+  */
 
   if (
     body !== undefined &&
     body !== null &&
-    !(body instanceof FormData) &&
+    !isFormData &&
     typeof body !== "string"
   ) {
-    requestHeaders.set("Content-Type", "application/json");
-    requestBody = JSON.stringify(body);
+    requestHeaders.set(
+      "Content-Type",
+      "application/json",
+    );
+
+    requestBody =
+      JSON.stringify(body);
   }
 
-  try {
-    const response = await fetch(url, {
-      method,
-      headers: requestHeaders,
-      body: requestBody,
-      signal: controller.signal,
-    });
 
-    const data = await parseResponse(response);
+  /* =====================================
+     FETCH
+  ===================================== */
+
+  try {
+    const response =
+      await fetch(
+        url,
+        {
+          method,
+
+          headers:
+            requestHeaders,
+
+          body:
+            requestBody,
+
+          signal:
+            controller.signal,
+        },
+      );
+
+    const data =
+      await parseResponse(
+        response,
+      );
+
+
+    /* ===================================
+       API ERROR
+    =================================== */
 
     if (!response.ok) {
-      if (response.status === 401) {
+      if (
+        response.status === 401
+      ) {
         clearAuthSession();
       }
 
@@ -246,23 +507,34 @@ export async function apiRequest(
           `Request failed with status ${response.status}.`,
         ),
         {
-          status: response.status,
+          status:
+            response.status,
+
           data,
         },
       );
     }
 
     return data;
+
   } catch (error) {
-    if (error instanceof ApiError) {
+    if (
+      error instanceof ApiError
+    ) {
       throw error;
     }
 
-    if (error.name === "AbortError") {
-      throw new ApiError("The request timed out. Please try again.", {
-        status: 408,
-        cause: error,
-      });
+    if (
+      error.name ===
+      "AbortError"
+    ) {
+      throw new ApiError(
+        "The request timed out. Please try again.",
+        {
+          status: 408,
+          cause: error,
+        },
+      );
     }
 
     throw new ApiError(
@@ -271,92 +543,244 @@ export async function apiRequest(
         cause: error,
       },
     );
+
   } finally {
-    globalThis.clearTimeout(timeoutId);
+    globalThis.clearTimeout(
+      timeoutId,
+    );
   }
 }
 
-function objectToProductFormData(product) {
-  if (product instanceof FormData) {
+
+/* =========================================
+   PRODUCT FORM DATA
+========================================= */
+
+function objectToProductFormData(
+  product,
+) {
+  if (
+    product instanceof FormData
+  ) {
     return product;
   }
 
-  const formData = new FormData();
+  const formData =
+    new FormData();
 
-  Object.entries(product || {}).forEach(([key, value]) => {
-    if (value === undefined || value === null || value === "") {
-      return;
-    }
+  Object.entries(
+    product || {},
+  ).forEach(
+    ([key, value]) => {
+      if (
+        value === undefined ||
+        value === null ||
+        value === ""
+      ) {
+        return;
+      }
 
-    formData.append(key, value);
-  });
+      formData.append(
+        key,
+        value,
+      );
+    },
+  );
 
   return formData;
 }
 
-/**
- * Shared API surface mapped to the currently implemented backend routes.
- *
- * Current backend product listing does not yet implement the README's planned
- * search, price filtering, sorting, or pagination query parameters. Category
- * filtering is available through /api/products/category/:category.
- */
-export const api = Object.freeze({
-  health: Object.freeze({
-    check: () => apiRequest(API_ENDPOINTS.health),
-  }),
 
-  products: Object.freeze({
-    list: () => apiRequest(API_ENDPOINTS.products),
+/* =========================================
+   API
+========================================= */
 
-    listByCategory: (category) =>
-      apiRequest(API_ENDPOINTS.productsByCategory(category)),
+export const api =
+  Object.freeze({
 
-    getById: (productId) =>
-      apiRequest(API_ENDPOINTS.productById(productId)),
+    /* -------------------------------------
+       HEALTH
+    ------------------------------------- */
 
-    create: (product) =>
-      apiRequest(API_ENDPOINTS.products, {
-        method: "POST",
-        body: objectToProductFormData(product),
-        requiresAuth: true,
+    health:
+      Object.freeze({
+        check: () =>
+          apiRequest(
+            API_ENDPOINTS.health,
+          ),
       }),
 
-    update: (productId, updates) =>
-      apiRequest(API_ENDPOINTS.productById(productId), {
-        method: "PUT",
-        body: updates,
-        requiresAuth: true,
+
+    /* -------------------------------------
+       PRODUCTS
+    ------------------------------------- */
+
+    products:
+      Object.freeze({
+
+        list: (filters = {}) => {
+          const query = new URLSearchParams();
+
+          Object.entries(filters).forEach(([key, value]) => {
+            if (value !== undefined && value !== null && value !== "") {
+              query.set(key, String(value));
+            }
+          });
+
+          const queryString = query.toString();
+          const url = queryString
+            ? `${API_ENDPOINTS.products}?${queryString}`
+            : API_ENDPOINTS.products;
+
+          return apiRequest(url);
+        },
+
+        listByCategory:
+          (category) =>
+            apiRequest(
+              API_ENDPOINTS.productsByCategory(
+                category,
+              ),
+            ),
+
+
+        getById:
+          (productId) =>
+            apiRequest(
+              API_ENDPOINTS.productById(
+                productId,
+              ),
+            ),
+
+
+        /*
+          CREATE PRODUCT
+
+          Uses FormData because the
+          product can contain an image.
+        */
+
+        create:
+          (product) =>
+            apiRequest(
+              API_ENDPOINTS.products,
+              {
+                method: "POST",
+
+                body:
+                  objectToProductFormData(
+                    product,
+                  ),
+
+                requiresAuth:
+                  true,
+              },
+            ),
+
+
+        /*
+          UPDATE PRODUCT
+
+          Uses FormData so a new image
+          can optionally be uploaded.
+        */
+
+        update:
+          (
+            productId,
+            updates,
+          ) =>
+            apiRequest(
+              API_ENDPOINTS.productById(
+                productId,
+              ),
+              {
+                method: "PUT",
+
+                body:
+                  objectToProductFormData(
+                    updates,
+                  ),
+
+                requiresAuth:
+                  true,
+              },
+            ),
+
+
+        /*
+          DELETE PRODUCT
+        */
+
+        remove:
+          (productId) =>
+            apiRequest(
+              API_ENDPOINTS.productById(
+                productId,
+              ),
+              {
+                method:
+                  "DELETE",
+
+                requiresAuth:
+                  true,
+              },
+            ),
       }),
 
-    remove: (productId) =>
-      apiRequest(API_ENDPOINTS.productById(productId), {
-        method: "DELETE",
-        requiresAuth: true,
+
+    /* -------------------------------------
+       USERS
+    ------------------------------------- */
+
+    users:
+      Object.freeze({
+
+        create:
+          (user) =>
+            apiRequest(
+              API_ENDPOINTS.users,
+              {
+                method:
+                  "POST",
+
+                body:
+                  user,
+              },
+            ),
+
+
+        login:
+          async (
+            credentials,
+            {
+              remember = false,
+            } = {},
+          ) => {
+            const response =
+              await apiRequest(
+                API_ENDPOINTS.userLogin,
+                {
+                  method:
+                    "POST",
+
+                  body:
+                    credentials,
+                },
+              );
+
+            if (
+              response?.token
+            ) {
+              saveAuthSession({
+                accessToken:
+                  response.token,
+
+                remember,
+              });
+            }
+
+            return response;
+          },
       }),
-  }),
-
-  users: Object.freeze({
-    create: (user) =>
-      apiRequest(API_ENDPOINTS.users, {
-        method: "POST",
-        body: user,
-      }),
-
-    login: async (credentials, { remember = false } = {}) => {
-      const response = await apiRequest(API_ENDPOINTS.userLogin, {
-        method: "POST",
-        body: credentials,
-      });
-
-      if (response?.token) {
-        saveAuthSession({
-          accessToken: response.token,
-          remember,
-        });
-      }
-
-      return response;
-    },
-  }),
-});
+  });
