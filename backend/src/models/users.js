@@ -14,7 +14,9 @@ const userSchema = new mongoose.Schema(
     gender: {
       type: String,
       enum: ["Male", "Female"],
-      required: [true, "Please select your gender"],
+     required: function () {
+  return this.role === "user";
+},
     },
     email: {
       type: String,
@@ -28,17 +30,24 @@ const userSchema = new mongoose.Schema(
     location: {
       type: String,
       enum: nigeriaStates,
-      required: [true, "Please enter your location"],
-    },
-    phone: {
-      type: String,
-      required: [true, "Please enter your phone number"],
-      unique: true,
-    },
+      required: function () {
+    return this.role === "user";
+  },
+},
+   phone: {
+  type: String,
+  required: function () {
+    return this.role === "user";
+  },
+  unique: true,
+  sparse: true,
+},
     address: {
-      type: String,
-      required: [true, "Please enter your address"],
-    },
+  type: String,
+  required: function () {
+    return this.role === "user";
+  },
+},
     HasAdminAccess: {
       type: Boolean,
       default: false,
