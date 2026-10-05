@@ -1,4 +1,5 @@
 import { API_ENDPOINTS, APP_CONFIG } from "./config.js";
+import { NIGERIA_STATES } from "./nigeriaStates.js";
 import {
   api,
   apiRequest,
@@ -37,6 +38,16 @@ const refreshStaffButton = document.querySelector("#refresh-staff");
 const staffTableBody = document.querySelector("#staff-table-body");
 const staffLoading = document.querySelector("#staff-loading");
 const staffEmpty = document.querySelector("#staff-empty");
+const addStaffButton = document.querySelector("#add-staff");
+
+const createStaffDialog = document.querySelector("#create-staff-dialog");
+const createStaffForm = document.querySelector("#create-staff-form");
+const createStaffDialogClose = document.querySelector("#create-staff-dialog-close");
+const createStaffCancel = document.querySelector("#create-staff-cancel");
+const createStaffSaveButton = document.querySelector("#create-staff-save");
+const generateStaffPasswordButton = document.querySelector("#generate-staff-password");
+const staffTemporaryPassword = document.querySelector("#staff-temporary-password");
+const staffLocation = document.querySelector("#staff-location");
 
 const roleDialog = document.querySelector("#role-dialog");
 const roleForm = document.querySelector("#role-form");
@@ -307,6 +318,177 @@ async function loadStaff() {
   }
 }
 
+function populateStaffLocations() {
+  if (!staffLocation) {
+    return;
+  }
+
+  const placeholder = staffLocation.querySelector('option[value=""]');
+  staffLocation.replaceChildren();
+
+  if (placeholder) {
+    staffLocation.appendChild(placeholder);
+  } else {
+    const option = document.createElement("option");
+    option.value = "";
+    option.textContent = "Select state / FCT";
+    staffLocation.appendChild(option);
+  }
+
+  NIGERIA_STATES.forEach((state) => {
+    const option = document.createElement("option");
+    option.value = state;
+    option.textContent = state;
+    staffLocation.appendChild(option);
+  });
+}
+
+function randomCharacter(characters) {
+  const values = new Uint32Array(1);
+  globalThis.crypto.getRandomValues(values);
+  return characters[values[0] % characters.length];
+}
+
+function shuffleSecurely(value) {
+  const characters = [...value];
+
+  for (let index = characters.length - 1; index > 0; index -= 1) {
+    const values = new Uint32Array(1);
+    globalThis.crypto.getRandomValues(values);
+    const swapIndex = values[0] % (index + 1);
+    [characters[index], characters[swapIndex]] = [characters[swapIndex], characters[index]];
+  }
+
+  return characters.join("");
+}
+
+function generateTemporaryPassword() {
+  const uppercase = "ABCDEFGHJKLMNPQRSTUVWXYZ";
+  const lowercase = "abcdefghijkmnopqrstuvwxyz";
+  const digits = "23456789";
+  const special = "@$!%*?&_";
+  const allCharacters = `${uppercase}${lowercase}${digits}${special}`;
+
+  let password = [
+    randomCharacter(uppercase),
+    randomCharacter(lowercase),
+    randomCharacter(digits),
+    randomCharacter(special),
+  ].join("");
+
+  while (password.length < 14) {
+    password += randomCharacter(allCharacters);
+  }
+
+  return shuffleSecurely(password);
+}
+
+function setGeneratedStaffPassword() {
+  if (staffTemporaryPassword) {
+    staffTemporaryPassword.value = generateTemporaryPassword();
+  }
+}
+
+function openCreateStaffDialog() {
+  if (!hasRole(SUPER_ADMIN_ROLE)) {
+    showPageMessage("Only a Super Admin can create staff accounts.", {
+      type: "error",
+      container: dashboardMessage,
+    });
+    return;
+  }
+
+  createStaffForm.reset();
+  setGeneratedStaffPassword();
+
+  if (typeof createStaffDialog.showModal === "function") {
+    createStaffDialog.showModal();
+  }
+}
+
+function closeCreateStaffDialog() {
+  if (createStaffDialog.open) {
+    createStaffDialog.close();
+  }
+
+  createStaffForm.reset();
+}
+
+async function createStaffAccount(event) {
+  event.preventDefault();
+
+  if (!hasRole(SUPER_ADMIN_ROLE)) {
+    showPageMessage("Only a Super Admin can create staff accounts.", {
+      type: "error",
+      container: dashboardMessage,
+    });
+    return;
+  }
+
+  const formData = new FormData(createStaffForm);
+  const payload = Object.fromEntries(formData.entries());
+
+  payload.sendAccountCreatedEmail = true;
+  payload.emailTemplate = "account-created";
+
+  setButtonLoading(createStaffSaveButton, true, "Creating...");
+  clearPageMessage(dashboardMessage);
+
+  try {
+    const response = await apiRequest(`${API_ENDPOINTS.users}/staff`, {
+      method: "POST",
+      requiresAuth: true,
+      body: payload,
+    });
+
+    showPageMessage(
+      response?.message ||
+        "Staff account created successfully. The account-created email notification has been requested.",
+      {
+        type: "success",
+        container: dashboardMessage,
+      },
+    );
+
+    closeCreateStaffDialog();
+    await loadStaff();
+  } catch (error) {
+    if (error instanceof ApiError && error.status === 401) {
+      redirectToLogin("Your session has expired. Please sign in again.");
+      return;
+    }
+
+    if (error instanceof ApiError && error.status === 403) {
+      showPageMessage("Only a Super Admin can create staff accounts.", {
+        type: "error",
+        container: dashboardMessage,
+      });
+      return;
+    }
+
+    if (error instanceof ApiError && [404, 405].includes(error.status)) {
+      showPageMessage(
+        "The Add Staff frontend is ready, but POST /api/users/staff is not available yet. The backend must create the staff account and send frontend/email-templates/account-created.html to the supplied email address.",
+        {
+          type: "warning",
+          container: dashboardMessage,
+        },
+      );
+      return;
+    }
+
+    showPageMessage(
+      error instanceof ApiError ? error.message : "Unable to create the staff account.",
+      {
+        type: "error",
+        container: dashboardMessage,
+      },
+    );
+  } finally {
+    setButtonLoading(createStaffSaveButton, false);
+  }
+}
+
 function openRoleDialog(userId) {
   const user = users.find((item) => item._id === userId);
 
@@ -485,6 +667,18 @@ staffSearch.addEventListener("input", renderStaffTable);
 includeUsers.addEventListener("change", renderStaffTable);
 refreshStaffButton.addEventListener("click", loadStaff);
 staffTableBody.addEventListener("click", handleStaffAction);
+populateStaffLocations();
+
+addStaffButton?.addEventListener("click", openCreateStaffDialog);
+generateStaffPasswordButton?.addEventListener("click", setGeneratedStaffPassword);
+createStaffForm?.addEventListener("submit", createStaffAccount);
+createStaffDialogClose?.addEventListener("click", closeCreateStaffDialog);
+createStaffCancel?.addEventListener("click", closeCreateStaffDialog);
+createStaffDialog?.addEventListener("click", (event) => {
+  if (event.target === createStaffDialog) {
+    closeCreateStaffDialog();
+  }
+});
 roleForm.addEventListener("submit", saveRole);
 roleDialogClose.addEventListener("click", closeRoleDialog);
 roleCancel.addEventListener("click", closeRoleDialog);
