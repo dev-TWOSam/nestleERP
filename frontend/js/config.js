@@ -46,11 +46,18 @@ export const API_BASE_URL = `${APP_CONFIG.apiOrigin}${APP_CONFIG.apiPrefix}`;
  */
 export const API_ENDPOINTS = Object.freeze({
   health: `${APP_CONFIG.apiOrigin}/health`,
+
   products: `${API_BASE_URL}/products`,
+
+  productCategories:
+    `${API_BASE_URL}/products/categories`,
+
   productById: (productId) =>
     `${API_BASE_URL}/products/${encodeURIComponent(productId)}`,
+
   productsByCategory: (category) =>
-    `${API_BASE_URL}/products/category/${encodeURIComponent(category)}`,
+    `${API_BASE_URL}/products/categories/${encodeURIComponent(category)}`,
+
   users: `${API_BASE_URL}/users`,
   userLogin: `${API_BASE_URL}/users/login`,
 });
