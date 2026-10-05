@@ -26,7 +26,12 @@
     <section class="toolbar" aria-label="Search and sort">
       <div class="field field-search">
         <label for="searchInput">Search products</label>
-        <input id="searchInput" type="search" placeholder="Search by name, brand or category" autocomplete="off" />
+        <input
+          id="searchInput"
+          type="search"
+          placeholder="Search by product name or ID"
+          autocomplete="off"
+        />
       </div>
 
       <div class="field">
@@ -62,15 +67,13 @@
           <button id="clearFilters" class="link-btn" type="button">Clear all</button>
         </div>
 
-        <fieldset class="filter-group">
-          <legend>Brand</legend>
-          <div id="brandList" class="check-list"></div>
-        </fieldset>
+        <div class="filter-group">
+          <label for="categorySelect">Category</label>
 
-        <fieldset class="filter-group">
-          <legend>Category</legend>
-          <div id="categoryList" class="check-list"></div>
-        </fieldset>
+          <select id="categorySelect">
+            <option value="">All categories</option>
+          </select>
+        </div>
 
         <fieldset class="filter-group">
           <legend>Price (₦)</legend>
@@ -99,6 +102,6 @@
     </div>
   </main>
 
-  <script src="../js/products.js"></script>
+  <script type="module" src="../js/products.js"></script>
 </body>
 </html>
