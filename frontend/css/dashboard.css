@@ -564,6 +564,41 @@
   gap: var(--space-3);
 }
 
+
+.dashboard-panel__actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: var(--space-3);
+}
+
+.dashboard-dialog--wide {
+  width: min(100% - 32px, 760px);
+}
+
+.dashboard-staff-form-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-4);
+}
+
+.dashboard-staff-form-grid__wide {
+  grid-column: 1 / -1;
+}
+
+.dashboard-password-field {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: var(--space-3);
+  align-items: center;
+}
+
+.dashboard-password-field input[readonly] {
+  background: #f7f9f8;
+  font-family: Consolas, "Courier New", monospace;
+  letter-spacing: 0.035em;
+}
+
 @media (max-width: 1050px) {
   .dashboard-shell {
     grid-template-columns: 220px minmax(0, 1fr);
@@ -580,6 +615,23 @@
 }
 
 @media (max-width: 780px) {
+  .dashboard-panel__actions {
+    width: 100%;
+    justify-content: flex-start;
+  }
+
+  .dashboard-staff-form-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .dashboard-staff-form-grid__wide {
+    grid-column: auto;
+  }
+
+  .dashboard-password-field {
+    grid-template-columns: 1fr;
+  }
+
   .dashboard-shell {
     display: block;
   }
