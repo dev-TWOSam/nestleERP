@@ -20,18 +20,51 @@
     <main>
         <section class="hero">
             <h2>Find Your Favourite Nestle Products</h2>
-            <p>Search for Nestle products by name or category</p>
-            <div class="search-box">
-                <input type="text" id="searchInput" placeholder="Search for a product ...">
-                <button id="searchButton">Search</button>
+            <p>Search for Nestle products by name or product ID</p>
+            <!-- Search -->
+            <div class="search-section">
+                <div class="search-box">
+                    <input type="search" id="searchInput" placeholder="Search for a products by name or ID" aria-label="Search products">
+                    <button type="button" id="searchButton">Search</button>
+                </div>
+                <!-- Filter -->
+                <div class="filter-controls">
+                    <div class="filter-field">
+                        <label for="categoryFilter">Category</label>
+                        <input type="text" id="categoryFilter" placeholder="e.g. Beverages">
+                    </div>
+                    <div class="filter-field">
+                        <label for="minPrice">Minimum Price</label>
+                        <input type="number" id="minPrice" placeholder="Min price" min="0">
+                    </div>
+                    <div class="filter-field">
+                        <label for="maxPrice">Maximum Price</label>
+                        <input type="number" id="maxPrice" placeholder="Max price" min="0">
+                    </div>
+                    <div class="filter-field">
+                        <label for="sortSelect">Sort By</label>
+                        <select id="sortSelect">
+                            <option value="">Sort products</option>
+                            <option value="price-asc">Price: Low to High</option>
+                            <option value="price-desc">Price: High to Low</option>
+                            <option value="name-asc">Name: A - Z</option>
+                            <option value="name-desc">Name: Z - A</option>
+                        </select>
+                    </div>
+                </div>
             </div>
         </section>
 
         <section class="products-section">
-            <h2>Featured Products</h2>
-            <div class="featured-container" id="productContainer">
+            <h2 id="productsHeading">Featured Products</h2>
+            <div class="products-grid" id="productContainer">
                 <!-- Products will be loaded from the backend -->
                 
+            </div>
+            <div class="pagination" id="pagination">
+                <button id="previousPage" type="button">Previous</button>
+                <span id="pageInfo"></span>
+                <button id="nextPage" type="button">Next</button>
             </div>
         </section>
     </main>

@@ -618,120 +618,60 @@ export const api =
     products:
       Object.freeze({
 
-        list: (filters = {}) => {
-          const query = new URLSearchParams();
+  list: (filters = {}) => {
+    const query = new URLSearchParams();
 
-          Object.entries(filters).forEach(([key, value]) => {
-            if (value !== undefined && value !== null && value !== "") {
-              query.set(key, String(value));
-            }
-          });
+    Object.entries(filters).forEach(
+      ([key, value]) => {
+        if (
+          value !== undefined &&
+          value !== null &&
+          value !== ""
+        ) {
+          query.set(
+            key,
+            String(value)
+          );
+        }
+      }
+    );
 
-          const queryString = query.toString();
-          const url = queryString
-            ? `${API_ENDPOINTS.products}?${queryString}`
-            : API_ENDPOINTS.products;
+    const queryString =
+      query.toString();
 
-          return apiRequest(url);
-        },
+    const url = queryString
+      ? `${API_ENDPOINTS.products}?${queryString}`
+      : API_ENDPOINTS.products;
 
-        listByCategory:
-          (category) =>
-            apiRequest(
-              API_ENDPOINTS.productsByCategory(
-                category,
-              ),
-            ),
+    return apiRequest(url);
+  },
 
+  categories: () =>
+    apiRequest(
+      API_ENDPOINTS.productCategories
+    ),
 
-        getById:
-          (productId) =>
-            apiRequest(
-              API_ENDPOINTS.productById(
-                productId,
-              ),
-            ),
+  listByCategory:
+    (category) =>
+      apiRequest(
+        API_ENDPOINTS.productsByCategory(
+          category
+        )
+      ),
 
-
-        /*
-          CREATE PRODUCT
-
-          Uses FormData because the
-          product can contain an image.
-        */
-
-        create:
-          (product) =>
-            apiRequest(
-              API_ENDPOINTS.products,
-              {
-                method: "POST",
-
-                body:
-                  objectToProductFormData(
-                    product,
-                  ),
-
-                requiresAuth:
-                  true,
-              },
-            ),
+  getById:
+    (productId) =>
+      apiRequest(
+        API_ENDPOINTS.productById(
+          productId
+        )
+      ),
+  }),
 
 
-        /*
-          UPDATE PRODUCT
-
-          Uses FormData so a new image
-          can optionally be uploaded.
-        */
-
-        update:
-          (
-            productId,
-            updates,
-          ) =>
-            apiRequest(
-              API_ENDPOINTS.productById(
-                productId,
-              ),
-              {
-                method: "PUT",
-
-                body:
-                  objectToProductFormData(
-                    updates,
-                  ),
-
-                requiresAuth:
-                  true,
-              },
-            ),
-
-
-        /*
-          DELETE PRODUCT
-        */
-
-        remove:
-          (productId) =>
-            apiRequest(
-              API_ENDPOINTS.productById(
-                productId,
-              ),
-              {
-                method:
-                  "DELETE",
-
-                requiresAuth:
-                  true,
-              },
-            ),
-      }),
-
-
-    /* -------------------------------------
-       USERS
-    ------------------------------------- */
+  /* -------------------------------------
+     USERS
+  ------------------------------------- */
 
     users:
       Object.freeze({
