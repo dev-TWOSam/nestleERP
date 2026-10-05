@@ -16,6 +16,10 @@
           <div>
             <p class="admin-products__eyebrow">Inventory</p>
 
+            <a href="dashboard.html" class="dashboard-btn">
+              ← Back to Dashboard
+            </a>
+
             <h1>Product Management</h1>
 
             <p class="admin-products__description">
@@ -44,7 +48,7 @@
             <input
               id="product-search"
               type="search"
-              placeholder="Search by product name..."
+              placeholder="Search by product name or ID..."
               autocomplete="off"
             />
           </div>
@@ -54,6 +58,51 @@
 
             <select id="category-filter">
               <option value="">All categories</option>
+            </select>
+          </div>
+
+          <div class="form-field">
+            <label class="form-label" for="min-price"> Minimum price </label>
+
+            <input
+              id="min-price"
+              type="number"
+              min="0"
+              step="0.01"
+              placeholder="Minimum price"
+            />
+          </div>
+
+          <div class="form-field">
+            <label class="form-label" for="max-price"> Maximum price </label>
+
+            <input
+              id="max-price"
+              type="number"
+              min="0"
+              step="0.01"
+              placeholder="Maximum price"
+            />
+          </div>
+
+          <div class="form-field">
+            <label class="form-label" for="sort-by"> Sort by </label>
+
+            <select id="sort-by">
+              <option value="">Default</option>
+              <option value="name">Name</option>
+              <option value="price">Price</option>
+              <option value="category">Category</option>
+              <option value="createdAt">Date Created</option>
+            </select>
+          </div>
+
+          <div class="form-field">
+            <label class="form-label" for="sort-order"> Sort order </label>
+
+            <select id="sort-order">
+              <option value="asc">Ascending</option>
+              <option value="desc">Descending</option>
             </select>
           </div>
 
@@ -93,6 +142,27 @@
             </table>
           </div>
         </section>
+
+        <div
+          id="pagination"
+          class="pagination"
+          aria-label="Product pagination"
+          hidden
+        >
+          <button
+            id="previous-page"
+            class="button button--secondary"
+            type="button"
+          >
+            Previous
+          </button>
+
+          <span id="pagination-info" aria-live="polite">Page 1 of 1</span>
+
+          <button id="next-page" class="button button--secondary" type="button">
+            Next
+          </button>
+        </div>
       </div>
     </main>
 

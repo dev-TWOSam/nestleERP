@@ -18,7 +18,7 @@
 
             <h1 id="form-title">Add Product</h1>
 
-            <p class="product-form__description">
+            <p id="form-description" class="product-form__description">
               Create a new product for the inventory.
             </p>
           </div>
@@ -30,7 +30,7 @@
 
         <div id="page-message" class="page-message" role="alert" hidden></div>
 
-        <form id="product-form" class="product-form" novalidate>
+        <form id="product-form" class="product-form">
           <div class="product-form__grid">
             <div class="form-field">
               <label class="form-label" for="name"> Product Name </label>
@@ -115,7 +115,9 @@
                 required
               />
 
-              <p class="form-help">Upload an image for the product.</p>
+              <p id="image-help" class="form-help">
+                Upload an image for the product.
+              </p>
             </div>
           </div>
 

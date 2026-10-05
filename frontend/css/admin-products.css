@@ -26,7 +26,7 @@
 
 .admin-products__toolbar {
   display: grid;
-  grid-template-columns: minmax(240px, 1fr) minmax(180px, 240px) auto;
+  grid-template-columns: repeat(3, minmax(180px, 1fr));
   align-items: end;
   gap: var(--space-4);
   margin-bottom: var(--space-5);
@@ -34,6 +34,14 @@
   background: var(--color-surface);
   border: 1px solid var(--color-border);
   border-radius: var(--radius-md);
+}
+
+.admin-products__search {
+  grid-column: span 2;
+}
+
+.admin-products__toolbar .button {
+  justify-self: start;
 }
 
 .admin-products__table-wrapper {
@@ -49,16 +57,16 @@
 
 .admin-products__table {
   width: 100%;
-  border-collapse: collapse;
   min-width: 900px;
+  border-collapse: collapse;
 }
 
 .admin-products__table th,
 .admin-products__table td {
   padding: var(--space-4);
   text-align: left;
-  border-bottom: 1px solid var(--color-border);
   vertical-align: middle;
+  border-bottom: 1px solid var(--color-border);
 }
 
 .admin-products__table th {
@@ -74,8 +82,8 @@
 .admin-products__product {
   display: flex;
   align-items: center;
-  gap: var(--space-3);
   min-width: 220px;
+  gap: var(--space-3);
 }
 
 .admin-products__image {
@@ -137,6 +145,60 @@
   text-align: center;
 }
 
+.pagination {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-3);
+  margin-top: var(--space-5);
+}
+
+.pagination .button:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+.dashboard-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+
+  padding: 10px 18px;
+
+  background: #222;
+  color: #fff;
+
+  text-decoration: none;
+
+  font-size: 14px;
+  font-weight: 600;
+
+  border: 1px solid #222;
+  border-radius: 8px;
+
+  cursor: pointer;
+
+  transition:
+    background-color 0.2s ease,
+    color 0.2s ease,
+    transform 0.2s ease,
+    box-shadow 0.2s ease;
+}
+
+.dashboard-btn:hover {
+  background: #fff;
+  color: #222;
+
+  transform: translateY(-1px);
+
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
+}
+
+.dashboard-btn:focus {
+  outline: 2px solid #222;
+  outline-offset: 3px;
+}
+
 @media (max-width: 800px) {
   .admin-products__header {
     align-items: flex-start;
@@ -145,5 +207,18 @@
 
   .admin-products__toolbar {
     grid-template-columns: 1fr;
+  }
+
+  .admin-products__search {
+    grid-column: auto;
+  }
+
+  .admin-products__toolbar .button {
+    width: 100%;
+  }
+
+  .pagination {
+    align-items: stretch;
+    flex-direction: column;
   }
 }
