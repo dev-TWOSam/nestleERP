@@ -193,9 +193,15 @@
                 </p>
               </div>
 
-              <button class="button button--secondary" id="refresh-staff" type="button">
-                Refresh
-              </button>
+              <div class="dashboard-panel__actions">
+                <button class="button" id="add-staff" type="button">
+                  + Add staff member
+                </button>
+
+                <button class="button button--secondary" id="refresh-staff" type="button">
+                  Refresh
+                </button>
+              </div>
             </div>
 
             <div class="dashboard-staff__toolbar">
@@ -241,6 +247,121 @@
         </main>
       </div>
     </div>
+
+    <dialog class="dashboard-dialog dashboard-dialog--wide" id="create-staff-dialog" data-role="super-admin" hidden>
+      <form class="dashboard-dialog__card" id="create-staff-form">
+        <div class="dashboard-dialog__heading">
+          <div>
+            <p class="dashboard-eyebrow">Super Admin</p>
+            <h2>Add staff member</h2>
+            <p>Create an administrative account and request the account-created email notification.</p>
+          </div>
+          <button
+            class="dashboard-dialog__close"
+            id="create-staff-dialog-close"
+            type="button"
+            aria-label="Close"
+          >
+            ×
+          </button>
+        </div>
+
+        <div class="dashboard-staff-form-grid">
+          <div class="form-field">
+            <label class="form-label" for="staff-first-name">First name</label>
+            <input id="staff-first-name" name="firstName" type="text" required autocomplete="given-name" />
+          </div>
+
+          <div class="form-field">
+            <label class="form-label" for="staff-last-name">Last name</label>
+            <input id="staff-last-name" name="lastName" type="text" required autocomplete="family-name" />
+          </div>
+
+          <div class="form-field dashboard-staff-form-grid__wide">
+            <label class="form-label" for="staff-email">Email address</label>
+            <input id="staff-email" name="email" type="email" required autocomplete="email" />
+          </div>
+
+          <div class="form-field">
+            <label class="form-label" for="staff-role">Role</label>
+            <select id="staff-role" name="role" required>
+              <option value="inventory-manager">Inventory Manager</option>
+              <option value="super-admin">Super Admin</option>
+            </select>
+          </div>
+
+          <div class="form-field">
+            <label class="form-label" for="staff-gender">Gender</label>
+            <select id="staff-gender" name="gender" required>
+              <option value="">Select gender</option>
+              <option value="male">Male</option>
+              <option value="female">Female</option>
+              <option value="other">Other</option>
+            </select>
+          </div>
+
+          <div class="form-field">
+            <label class="form-label" for="staff-location">Location</label>
+            <select
+              id="staff-location"
+              name="location"
+              required
+              autocomplete="address-level1"
+              aria-describedby="staff-location-help"
+            >
+              <option value="">Select state / FCT</option>
+            </select>
+          </div>
+
+          <div class="form-field">
+            <label class="form-label" for="staff-phone-country-code">Phone country code</label>
+            <input
+              id="staff-phone-country-code"
+              name="phoneCountryCode"
+              type="text"
+              value="+234"
+              placeholder="+234"
+              required
+              inputmode="tel"
+            />
+          </div>
+
+          <div class="form-field">
+            <label class="form-label" for="staff-phone">Phone number</label>
+            <input id="staff-phone" name="phone" type="tel" required autocomplete="tel-national" />
+          </div>
+
+          <div class="form-field dashboard-staff-form-grid__wide">
+            <label class="form-label" for="staff-address">Address</label>
+            <input id="staff-address" name="address" type="text" required autocomplete="street-address" />
+          </div>
+
+          <div class="form-field dashboard-staff-form-grid__wide">
+            <label class="form-label" for="staff-temporary-password">Temporary password</label>
+            <div class="dashboard-password-field">
+              <input
+                id="staff-temporary-password"
+                name="password"
+                type="text"
+                minlength="12"
+                maxlength="30"
+                required
+                readonly
+                autocomplete="new-password"
+              />
+              <button class="button button--secondary" id="generate-staff-password" type="button">
+                Regenerate
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <div class="dashboard-dialog__actions">
+          <button class="button button--secondary" id="create-staff-cancel" type="button">Cancel</button>
+          <button class="button" id="create-staff-save" type="submit">Create staff account</button>
+        </div>
+      </form>
+    </dialog>
 
     <dialog class="dashboard-dialog" id="role-dialog">
       <form class="dashboard-dialog__card" id="role-form" method="dialog">
