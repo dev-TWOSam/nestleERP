@@ -10,6 +10,14 @@ const userController = require("../controllers/users");
 // Route to create a new user
 router.post("/", userController.createUser);
 
+// Route to create staff (accessible only by super-admin)
+router.post(
+  "/staff",
+  authenticate,
+  authorize("super-admin"),
+  userController.createStaff,
+);
+
 // Route to login a user
 router.post("/login", userController.login);
 

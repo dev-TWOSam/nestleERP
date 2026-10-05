@@ -1,7 +1,7 @@
 const User = require("../models/users");
 const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
-
+const { sendStaffCredentials } = require("../utils/sendEmail");
 //Create-user endpoint
 exports.createUser = async (req, res) => {
   try {
@@ -388,5 +388,68 @@ exports.deleteUserById = async (req, res) => {
     return res
       .status(500)
       .json({ message: "Error deleting user", error: error.message });
+  }
+};
+exports.createStaff = async (req, res) => {
+  try {
+    const { name, email, password } = req.body;
+
+    if (!name || !email || !password) {
+      return res.status(400).json({
+        message: "Name, email and password are required",
+      });
+    }
+
+    const nameParts = name.trim().split(/\s+/);
+
+    if (nameParts.length < 2) {
+      return res.status(400).json({
+        message: "Please provide the staff member's first and last name",
+      });
+    }
+
+    const firstName = nameParts[0];
+    const lastName = nameParts.slice(1).join(" ");
+
+    const existingUser = await User.findOne({ email });
+
+    if (existingUser) {
+      return res.status(409).json({
+        message: "A user with this email already exists",
+      });
+    }
+
+    const salt = await bcrypt.genSalt(10);
+    const hashedPassword = await bcrypt.hash(password, salt);
+
+    const staff = new User({
+      firstName,
+      lastName,
+      email,
+      password: hashedPassword,
+      role: "inventory-manager",
+      HasAdminAccess: false,
+    });
+
+    await staff.save();
+    await sendStaffCredentials({ 
+      email,
+      name,
+      password,
+    });
+
+    const staffResponse = staff.toObject();
+    delete staffResponse.password;
+
+    return res.status(201).json({
+      message: "Inventory manager created successfully",
+      staff: staffResponse,
+    });
+  } catch (error) {
+    console.error("Error creating staff:", error);
+
+    return res.status(500).json({
+      message: "Failed to create staff",
+    });
   }
 };
