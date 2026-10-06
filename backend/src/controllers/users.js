@@ -1,3 +1,4 @@
+const mongoose = require("mongoose");
 const User = require("../models/users");
 const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
@@ -263,7 +264,11 @@ exports.login = async (req, res) => {
         email: user.email,
       },
       process.env.JWT_SECRET,
-      { expiresIn: "1h" },
+      {
+  expiresIn:
+    process.env.JWT_EXPIRES_IN ||
+    "1h",
+}
     );
 
     return res.status(200).json({ message: "Login successful", token });
@@ -309,67 +314,402 @@ exports.getUserById = async (req, res) => {
 };
 
 // Update-user endpoint
+// Update user
 exports.updateUser = async (req, res) => {
   try {
     const { id } = req.params;
-    if (!id) return res.status(400).json({ message: "Please provide the ID" });
 
-    if (
-      (req.body.firstName && typeof req.body.firstName !== "string") ||
-      (req.body.lastName && typeof req.body.lastName !== "string") ||
-      (req.body.email && typeof req.body.email !== "string") ||
-      (req.body.phoneCountryCode &&
-        typeof req.body.phoneCountryCode !== "string") ||
-      (req.body.phone && typeof req.body.phone !== "string") ||
-      (req.body.location && typeof req.body.location !== "string") ||
-      (req.body.address && typeof req.body.address !== "string")
-    ) {
-      return res
-        .status(400)
-        .json({ message: "Invalid data format. Input values must be strings" });
-    }
+    // =====================================
+    // VALIDATE ID
+    // =====================================
 
-    // Check if the user exists before attempting to update
-    const user = await User.findById(id);
-    if (!user) return res.status(404).json({ message: "User not found" });
-
-    let updatedPhone = user.phone; // Default to existing phone number
-    if (req.body.phoneCountryCode || req.body.phone) {
-      const phoneCountryCode = req.body.phoneCountryCode || "";
-      const phone = req.body.phone || "";
-      updatedPhone = (phoneCountryCode + phone).replace(/\s+/g, "");
-    }
-
-    const phoneRegex = /^\+?[1-9]\d{1,14}$/;
-    if (!phoneRegex.test(updatedPhone)) {
+    if (!id) {
       return res.status(400).json({
-        message:
-          "Please provide a valid phone number, including country code (e.g., +234...).",
+        success: false,
+        message: "Please provide the user ID",
+        data: null,
       });
     }
 
-    const updatedUser = await User.findByIdAndUpdate(
-      id,
-      {
-        firstName: req.body.firstName,
-        lastName: req.body.lastName,
-        email: req.body.email,
-        phone: updatedPhone,
-        location: req.body.location,
-        address: req.body.address,
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid user ID",
+        data: null,
+      });
+    }
+
+    // =====================================
+    // FIND USER
+    // =====================================
+
+    const user = await User.findById(id);
+
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: "User not found",
+        data: null,
+      });
+    }
+
+    // =====================================
+    // PREVENT OWN ROLE CHANGE
+    // =====================================
+
+    if (
+      req.body.role &&
+      req.user?.id === id
+    ) {
+      return res.status(400).json({
+        success: false,
+        message:
+          "You cannot change your own role from this account",
+        data: null,
+      });
+    }
+
+    // =====================================
+    // UPDATE DATA
+    // =====================================
+
+    const updateData = {};
+
+    // =====================================
+    // FIRST NAME
+    // =====================================
+
+    if (
+      Object.prototype.hasOwnProperty.call(
+        req.body,
+        "firstName",
+      )
+    ) {
+      if (
+        typeof req.body.firstName !== "string" ||
+        !req.body.firstName.trim()
+      ) {
+        return res.status(400).json({
+          success: false,
+          message: "First name must be a valid string",
+          data: null,
+        });
+      }
+
+      updateData.firstName =
+        req.body.firstName.trim();
+    }
+
+    // =====================================
+    // LAST NAME
+    // =====================================
+
+    if (
+      Object.prototype.hasOwnProperty.call(
+        req.body,
+        "lastName",
+      )
+    ) {
+      if (
+        typeof req.body.lastName !== "string" ||
+        !req.body.lastName.trim()
+      ) {
+        return res.status(400).json({
+          success: false,
+          message: "Last name must be a valid string",
+          data: null,
+        });
+      }
+
+      updateData.lastName =
+        req.body.lastName.trim();
+    }
+
+    // =====================================
+    // EMAIL
+    // =====================================
+
+    if (
+      Object.prototype.hasOwnProperty.call(
+        req.body,
+        "email",
+      )
+    ) {
+      const email =
+        String(req.body.email)
+          .trim()
+          .toLowerCase();
+
+      const emailRegex =
+        /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+      if (!emailRegex.test(email)) {
+        return res.status(400).json({
+          success: false,
+          message: "Please provide a valid email address",
+          data: null,
+        });
+      }
+
+      const existingEmailUser =
+        await User.findOne({
+          email,
+          _id: { $ne: id },
+        });
+
+      if (existingEmailUser) {
+        return res.status(409).json({
+          success: false,
+          message: "Email already exists",
+          data: null,
+        });
+      }
+
+      updateData.email = email;
+    }
+
+    // =====================================
+    // PHONE
+    // =====================================
+
+    if (
+      req.body.phoneCountryCode !== undefined ||
+      req.body.phone !== undefined
+    ) {
+      const countryCode =
+        req.body.phoneCountryCode !== undefined
+          ? String(req.body.phoneCountryCode).trim()
+          : "";
+
+      const phone =
+        req.body.phone !== undefined
+          ? String(req.body.phone).trim()
+          : "";
+
+      const updatedPhone =
+        `${countryCode}${phone}`.replace(
+          /\s+/g,
+          "",
+        );
+
+      const phoneRegex =
+        /^\+?[1-9]\d{1,14}$/;
+
+      if (!phoneRegex.test(updatedPhone)) {
+        return res.status(400).json({
+          success: false,
+          message:
+            "Please provide a valid phone number including country code",
+          data: null,
+        });
+      }
+
+      const existingPhoneUser =
+        await User.findOne({
+          phone: updatedPhone,
+          _id: { $ne: id },
+        });
+
+      if (existingPhoneUser) {
+        return res.status(409).json({
+          success: false,
+          message: "Phone number already exists",
+          data: null,
+        });
+      }
+
+      updateData.phone =
+        updatedPhone;
+    }
+
+    // =====================================
+    // LOCATION
+    // =====================================
+
+    if (
+      Object.prototype.hasOwnProperty.call(
+        req.body,
+        "location",
+      )
+    ) {
+      const location =
+        String(req.body.location).trim();
+
+      const allowedLocations =
+        User.schema.path("location").enumValues;
+
+      if (
+        !allowedLocations.includes(
+          location,
+        )
+      ) {
+        return res.status(400).json({
+          success: false,
+          message:
+            "Please select a valid Nigerian state or the FCT",
+          data: null,
+        });
+      }
+
+      updateData.location =
+        location;
+    }
+
+    // =====================================
+    // ADDRESS
+    // =====================================
+
+    if (
+      Object.prototype.hasOwnProperty.call(
+        req.body,
+        "address",
+      )
+    ) {
+      const address =
+        String(req.body.address).trim();
+
+      if (!address) {
+        return res.status(400).json({
+          success: false,
+          message: "Address cannot be empty",
+          data: null,
+        });
+      }
+
+      updateData.address =
+        address;
+    }
+
+    // =====================================
+    // ROLE
+    // =====================================
+
+    if (
+      Object.prototype.hasOwnProperty.call(
+        req.body,
+        "role",
+      )
+    ) {
+      const allowedRoles = [
+        "user",
+        "inventory-manager",
+        "super-admin",
+      ];
+
+      const requestedRole =
+        String(req.body.role).trim();
+
+      if (
+        !allowedRoles.includes(
+          requestedRole,
+        )
+      ) {
+        return res.status(400).json({
+          success: false,
+          message:
+            "Role must be user, inventory-manager, or super-admin",
+          data: null,
+        });
+      }
+
+      updateData.role =
+        requestedRole;
+
+      /*
+       * Do not trust HasAdminAccess
+       * from the frontend.
+       *
+       * Derive it from the role.
+       */
+
+      updateData.HasAdminAccess =
+        requestedRole !== "user";
+    }
+
+    // =====================================
+    // NOTHING TO UPDATE
+    // =====================================
+
+    if (
+      Object.keys(updateData).length === 0
+    ) {
+      return res.status(400).json({
+        success: false,
+        message: "No valid fields were provided for update",
+        data: null,
+      });
+    }
+
+    // =====================================
+    // UPDATE USER
+    // =====================================
+
+    const updatedUser =
+      await User.findByIdAndUpdate(
+        id,
+        updateData,
+        {
+          new: true,
+          runValidators: true,
+        },
+      ).select("-password");
+
+    // =====================================
+    // SUCCESS
+    // =====================================
+
+    return res.status(200).json({
+      success: true,
+      message: "User updated successfully",
+
+      data: {
+        user: updatedUser,
       },
-      { new: true, runValidators: true },
-    ).select("-password"); // Exclude the password field from the response
-    if (!updatedUser)
-      return res.status(404).json({ message: "User not found" });
-    return res
-      .status(200)
-      .json({ message: "User updated successfully", user: updatedUser });
+
+      /*
+       * Temporary compatibility
+       * with the current dashboard.
+       */
+      user: updatedUser,
+    });
   } catch (error) {
-    console.error("Error updating user:", error);
-    return res
-      .status(500)
-      .json({ message: "Error updating user", error: error.message });
+    console.error(
+      "Error updating user:",
+      error,
+    );
+
+    if (
+      error?.name ===
+      "ValidationError"
+    ) {
+      const firstError =
+        Object.values(
+          error.errors || {},
+        )[0];
+
+      return res.status(400).json({
+        success: false,
+        message:
+          firstError?.message ||
+          "Invalid user data",
+        data: null,
+      });
+    }
+
+    if (error?.code === 11000) {
+      return res.status(409).json({
+        success: false,
+        message:
+          "Email or phone number already exists",
+        data: null,
+      });
+    }
+
+    return res.status(500).json({
+      success: false,
+      message: "Error updating user",
+      data: null,
+    });
   }
 };
 
@@ -392,64 +732,476 @@ exports.deleteUserById = async (req, res) => {
 };
 exports.createStaff = async (req, res) => {
   try {
-    const { name, email, password } = req.body;
-
-    if (!name || !email || !password) {
-      return res.status(400).json({
-        message: "Name, email and password are required",
-      });
-    }
-
-    const nameParts = name.trim().split(/\s+/);
-
-    if (nameParts.length < 2) {
-      return res.status(400).json({
-        message: "Please provide the staff member's first and last name",
-      });
-    }
-
-    const firstName = nameParts[0];
-    const lastName = nameParts.slice(1).join(" ");
-
-    const existingUser = await User.findOne({ email });
-
-    if (existingUser) {
-      return res.status(409).json({
-        message: "A user with this email already exists",
-      });
-    }
-
-    const salt = await bcrypt.genSalt(10);
-    const hashedPassword = await bcrypt.hash(password, salt);
-
-    const staff = new User({
+    const {
       firstName,
       lastName,
+      gender,
       email,
-      password: hashedPassword,
-      role: "inventory-manager",
-      HasAdminAccess: false,
-    });
-
-    await staff.save();
-    await sendStaffCredentials({ 
-      email,
-      name,
       password,
-    });
+      location,
+      phoneCountryCode,
+      phone,
+      address,
+      role,
+    } = req.body;
 
-    const staffResponse = staff.toObject();
+    // =====================================
+    // REQUIRED FIELDS
+    // =====================================
+
+    if (
+      !firstName ||
+      !lastName ||
+      !gender ||
+      !email ||
+      !password ||
+      !location ||
+      !phoneCountryCode ||
+      !phone ||
+      !address ||
+      !role
+    ) {
+      return res.status(400).json({
+        success: false,
+        message: "All staff fields are required",
+        data: null,
+      });
+    }
+
+    // =====================================
+    // VALIDATION RULES
+    // =====================================
+
+    const nameRegex =
+      /^[a-zA-Z\s\-']{2,50}$/;
+
+    const emailRegex =
+      /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+    const passwordRegex =
+      /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@#$!%*?&_])[A-Za-z\d@#$!%*?&_]{12,30}$/;
+
+    const phoneRegex =
+      /^\+?[1-9]\d{1,14}$/;
+
+    const allowedRoles = [
+      "inventory-manager",
+      "super-admin",
+    ];
+
+    const allowedGenders = [
+      "Male",
+      "Female",
+    ];
+
+    // =====================================
+    // NORMALIZE VALUES
+    // =====================================
+
+    const cleanFirstName =
+      String(firstName).trim();
+
+    const cleanLastName =
+      String(lastName).trim();
+
+    const cleanEmail =
+      String(email)
+        .trim()
+        .toLowerCase();
+
+    const cleanGender =
+      String(gender).trim();
+
+    const cleanLocation =
+      String(location).trim();
+
+    const cleanAddress =
+      String(address).trim();
+
+    const cleanRole =
+      String(role).trim();
+
+    // =====================================
+    // NAME VALIDATION
+    // =====================================
+
+    if (
+      !nameRegex.test(
+        cleanFirstName,
+      )
+    ) {
+      return res.status(400).json({
+        success: false,
+
+        message:
+          "First name must be between 2 and 50 characters and can only contain letters, spaces, hyphens, and apostrophes",
+
+        data: null,
+      });
+    }
+
+    if (
+      !nameRegex.test(
+        cleanLastName,
+      )
+    ) {
+      return res.status(400).json({
+        success: false,
+
+        message:
+          "Last name must be between 2 and 50 characters and can only contain letters, spaces, hyphens, and apostrophes",
+
+        data: null,
+      });
+    }
+
+    // =====================================
+    // EMAIL VALIDATION
+    // =====================================
+
+    if (
+      !emailRegex.test(
+        cleanEmail,
+      )
+    ) {
+      return res.status(400).json({
+        success: false,
+        message:
+          "Please provide a valid email address",
+        data: null,
+      });
+    }
+
+    // =====================================
+    // PASSWORD VALIDATION
+    // =====================================
+
+    if (
+      !passwordRegex.test(
+        String(password),
+      )
+    ) {
+      return res.status(400).json({
+        success: false,
+
+        message:
+          "Password must be 12-30 characters and contain uppercase, lowercase, number, and special character (@$!%*?&_)",
+
+        data: null,
+      });
+    }
+
+    // =====================================
+    // ROLE VALIDATION
+    // =====================================
+
+    if (
+      !allowedRoles.includes(
+        cleanRole,
+      )
+    ) {
+      return res.status(400).json({
+        success: false,
+
+        message:
+          "Role must be inventory-manager or super-admin",
+
+        data: null,
+      });
+    }
+
+    // =====================================
+    // GENDER VALIDATION
+    // =====================================
+
+    if (
+      !allowedGenders.includes(
+        cleanGender,
+      )
+    ) {
+      return res.status(400).json({
+        success: false,
+        message:
+          "Gender must be Male or Female",
+        data: null,
+      });
+    }
+
+    // =====================================
+    // LOCATION VALIDATION
+    // =====================================
+
+    const allowedLocations =
+      User.schema.path(
+        "location",
+      ).enumValues;
+
+    if (
+      !allowedLocations.includes(
+        cleanLocation,
+      )
+    ) {
+      return res.status(400).json({
+        success: false,
+
+        message:
+          "Please select a valid Nigerian state or the FCT",
+
+        data: null,
+      });
+    }
+
+    // =====================================
+    // ADDRESS VALIDATION
+    // =====================================
+
+    if (!cleanAddress) {
+      return res.status(400).json({
+        success: false,
+        message:
+          "Address is required",
+        data: null,
+      });
+    }
+
+    // =====================================
+    // PHONE NUMBER
+    // =====================================
+
+    const fullPhoneNumber =
+      `${String(
+        phoneCountryCode,
+      ).trim()}${String(
+        phone,
+      ).trim()}`.replace(
+        /\s+/g,
+        "",
+      );
+
+    if (
+      !phoneRegex.test(
+        fullPhoneNumber,
+      )
+    ) {
+      return res.status(400).json({
+        success: false,
+
+        message:
+          "Please provide a valid phone number including country code (for example +234...)",
+
+        data: null,
+      });
+    }
+
+    // =====================================
+    // CHECK EXISTING EMAIL / PHONE
+    // =====================================
+
+    const existingUser =
+      await User.findOne({
+        $or: [
+          {
+            email:
+              cleanEmail,
+          },
+
+          {
+            phone:
+              fullPhoneNumber,
+          },
+        ],
+      });
+
+    if (existingUser) {
+      const message =
+        existingUser.email ===
+        cleanEmail
+          ? "Email already exists"
+          : "Phone number already exists";
+
+      return res.status(409).json({
+        success: false,
+        message,
+        data: null,
+      });
+    }
+
+    // =====================================
+    // HASH TEMPORARY PASSWORD
+    // =====================================
+
+    const salt =
+      await bcrypt.genSalt(
+        10,
+      );
+
+    const hashedPassword =
+      await bcrypt.hash(
+        String(password),
+        salt,
+      );
+
+    // =====================================
+    // CREATE STAFF ACCOUNT
+    // =====================================
+
+    const staff =
+      await User.create({
+        firstName:
+          cleanFirstName,
+
+        lastName:
+          cleanLastName,
+
+        gender:
+          cleanGender,
+
+        email:
+          cleanEmail,
+
+        password:
+          hashedPassword,
+
+        location:
+          cleanLocation,
+
+        phone:
+          fullPhoneNumber,
+
+        address:
+          cleanAddress,
+
+        role:
+          cleanRole,
+
+        HasAdminAccess:
+          true,
+      });
+
+    // =====================================
+    // SEND LOGIN CREDENTIALS
+    // =====================================
+
+    let emailSent =
+      true;
+
+    try {
+      await sendStaffCredentials({
+        email:
+          cleanEmail,
+
+        name:
+          `${cleanFirstName} ${cleanLastName}`,
+
+        password:
+          String(password),
+
+        role:
+          cleanRole,
+      });
+    } catch (emailError) {
+      /*
+       * Do not report account creation
+       * as failed just because SMTP
+       * failed after the user was
+       * already saved.
+       */
+
+      emailSent =
+        false;
+
+      console.error(
+        "Staff account created but credentials email failed:",
+        emailError,
+      );
+    }
+
+    // =====================================
+    // REMOVE PASSWORD FROM RESPONSE
+    // =====================================
+
+    const staffResponse =
+      staff.toObject();
+
     delete staffResponse.password;
 
+    // =====================================
+    // ROLE LABEL
+    // =====================================
+
+    const roleLabel =
+      cleanRole ===
+      "super-admin"
+        ? "Super Admin"
+        : "Inventory Manager";
+
+    // =====================================
+    // RESPONSE
+    // =====================================
+
     return res.status(201).json({
-      message: "Inventory manager created successfully",
-      staff: staffResponse,
+      success: true,
+
+      message:
+        emailSent
+          ? `${roleLabel} created successfully and credentials email sent`
+          : `${roleLabel} created successfully, but the credentials email could not be sent`,
+
+      data: {
+        staff:
+          staffResponse,
+
+        emailSent,
+      },
     });
   } catch (error) {
-    console.error("Error creating staff:", error);
+    console.error(
+      "Error creating staff:",
+      error,
+    );
+
+    // Mongoose validation
+    if (
+      error?.name ===
+      "ValidationError"
+    ) {
+      const firstError =
+        Object.values(
+          error.errors ||
+            {},
+        )[0];
+
+      return res.status(400).json({
+        success: false,
+
+        message:
+          firstError?.message ||
+          "Invalid staff data",
+
+        data: null,
+      });
+    }
+
+    // Duplicate key
+    if (
+      error?.code ===
+      11000
+    ) {
+      return res.status(409).json({
+        success: false,
+
+        message:
+          "Email or phone number already exists",
+
+        data: null,
+      });
+    }
 
     return res.status(500).json({
-      message: "Failed to create staff",
+      success: false,
+      message:
+        "Failed to create staff",
+      data: null,
     });
   }
 };

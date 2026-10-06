@@ -616,56 +616,164 @@ export const api =
     ------------------------------------- */
 
     products:
-      Object.freeze({
+  Object.freeze({
 
-  list: (filters = {}) => {
-    const query = new URLSearchParams();
+    /* =====================================
+       LIST PRODUCTS
+       Search + filters + sorting + pagination
+    ===================================== */
 
-    Object.entries(filters).forEach(
-      ([key, value]) => {
-        if (
-          value !== undefined &&
-          value !== null &&
-          value !== ""
-        ) {
-          query.set(
-            key,
-            String(value)
-          );
-        }
-      }
-    );
+    list: (filters = {}) => {
+      const query =
+        new URLSearchParams();
 
-    const queryString =
-      query.toString();
+      Object.entries(
+        filters,
+      ).forEach(
+        ([key, value]) => {
+          if (
+            value !== undefined &&
+            value !== null &&
+            value !== ""
+          ) {
+            query.set(
+              key,
+              String(value),
+            );
+          }
+        },
+      );
 
-    const url = queryString
-      ? `${API_ENDPOINTS.products}?${queryString}`
-      : API_ENDPOINTS.products;
+      const queryString =
+        query.toString();
 
-    return apiRequest(url);
-  },
+      const url =
+        queryString
+          ? `${API_ENDPOINTS.products}?${queryString}`
+          : API_ENDPOINTS.products;
 
-  categories: () =>
-    apiRequest(
-      API_ENDPOINTS.productCategories
-    ),
+      return apiRequest(
+        url,
+      );
+    },
 
-  listByCategory:
-    (category) =>
+
+    /* =====================================
+       GET PRODUCT CATEGORIES
+    ===================================== */
+
+    categories: () =>
       apiRequest(
-        API_ENDPOINTS.productsByCategory(
-          category
-        )
+        API_ENDPOINTS.productCategories,
       ),
 
-  getById:
-    (productId) =>
-      apiRequest(
-        API_ENDPOINTS.productById(
-          productId
-        )
-      ),
+
+    /* =====================================
+       GET PRODUCTS BY CATEGORY
+    ===================================== */
+
+    listByCategory:
+      (category) =>
+        apiRequest(
+          API_ENDPOINTS.productsByCategory(
+            category,
+          ),
+        ),
+
+
+    /* =====================================
+       GET SINGLE PRODUCT
+    ===================================== */
+
+    getById:
+      (productId) =>
+        apiRequest(
+          API_ENDPOINTS.productById(
+            productId,
+          ),
+        ),
+
+
+    /* =====================================
+       CREATE PRODUCT
+
+       POST /api/products
+       Authentication required.
+       Uses FormData because products
+       can include an image.
+    ===================================== */
+
+    create:
+      (product) =>
+        apiRequest(
+          API_ENDPOINTS.products,
+          {
+            method:
+              "POST",
+
+            body:
+              objectToProductFormData(
+                product,
+              ),
+
+            requiresAuth:
+              true,
+          },
+        ),
+
+
+    /* =====================================
+       UPDATE PRODUCT
+
+       PUT /api/products/:id
+       Authentication required.
+    ===================================== */
+
+    update:
+      (
+        productId,
+        product,
+      ) =>
+        apiRequest(
+          API_ENDPOINTS.productById(
+            productId,
+          ),
+          {
+            method:
+              "PUT",
+
+            body:
+              objectToProductFormData(
+                product,
+              ),
+
+            requiresAuth:
+              true,
+          },
+        ),
+
+
+    /* =====================================
+       DELETE PRODUCT
+
+       DELETE /api/products/:id
+       Authentication required.
+    ===================================== */
+
+    remove:
+      (productId) =>
+        apiRequest(
+          API_ENDPOINTS.productById(
+            productId,
+          ),
+          {
+            method:
+              "DELETE",
+
+            requiresAuth:
+              true,
+          },
+        ),
   }),
 
 

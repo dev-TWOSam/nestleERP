@@ -10,3 +10,27 @@ describe("nestleERP backend health check", () => {
     expect(response.body.message).toBe("nestleERP backend is running");
   });
 });
+
+test(
+  "returns 404 for an unknown route",
+  async () => {
+    const response =
+      await request(app)
+        .get(
+          "/api/does-not-exist",
+        );
+
+    expect(
+      response.status,
+    ).toBe(404);
+
+    expect(
+      response.body,
+    ).toEqual({
+      success: false,
+      message:
+        "Route not found: GET /api/does-not-exist",
+      data: null,
+    });
+  },
+);

@@ -10,30 +10,28 @@ const upload = require("../middleware/upload");
 const router = express.Router();
 
 // Route to get all products
-router.get("/", productController.getAllProducts);
-
-// Route to get products by category
-router.get("/categories/:category", productController.getProductsByCategory);
-
-// Route to get products by ID
-router.get("/:id", productController.getProductById);
-
-// Route to create a new product with image upload
-router.post(
+router.get(
   "/",
-  authenticate,
-  authorize("inventory-manager", "super-admin"),
-  upload.single("image"), // Use multer middleware to handle single image upload
-  productController.createProduct,
+  productController.getAllProducts,
 );
 
-// Route to update a product by ID with image replacement
-router.put(
+// Route to get all unique product categories
+router.get(
+  "/categories",
+  productController.getProductCategories,
+);
+
+// Route to get products by a specific category
+router.get(
+  "/categories/:category",
+  productController.getProductsByCategory,
+);
+
+// Route to get product by ID
+// Keep this AFTER /categories routes
+router.get(
   "/:id",
-  authenticate,
-  authorize("inventory-manager", "super-admin"),
-  upload.single("image"),
-  productController.updateProduct,
+  productController.getProductById,
 );
 
 // Route to delete a product by ID

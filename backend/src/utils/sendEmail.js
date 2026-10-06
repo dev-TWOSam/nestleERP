@@ -29,8 +29,17 @@ const sendStaffCredentials = async ({
   const loginUrl =
     process.env.FRONTEND_URL || "http://localhost:3000";
 
-  const roleName =
-    role === "inventory-manager" ? "Inventory Manager" : role;
+  const roleNames = {
+  "inventory-manager":
+    "Inventory Manager",
+
+  "super-admin":
+    "Super Admin",
+};
+
+const roleName =
+  roleNames[role] ||
+  role;
 
   html = html
     .replaceAll("{{FULL_NAME}}", name)

@@ -535,18 +535,28 @@ async function saveRole(event) {
       },
     });
 
-    if (response?.user?.role !== requestedRole) {
-      showPageMessage(
-        "The backend accepted the request but did not apply the role change. Update the protected user controller to persist role and HasAdminAccess before role assignment can work.",
-        {
-          type: "warning",
-          container: dashboardMessage,
-        },
-      );
-      closeRoleDialog();
-      await loadStaff();
-      return;
-    }
+    const updatedUser =
+  response?.data?.user ??
+  response?.user;
+
+if (
+  updatedUser?.role !==
+  requestedRole
+) {
+  showPageMessage(
+    "The backend accepted the request but did not apply the role change.",
+    {
+      type: "warning",
+      container: dashboardMessage,
+    },
+  );
+
+  closeRoleDialog();
+
+  await loadStaff();
+
+  return;
+}
 
     showPageMessage("Staff role updated successfully.", {
       type: "success",

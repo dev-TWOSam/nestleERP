@@ -1356,3 +1356,177 @@ nestleERP is being developed as a collaborative mini eCommerce MVP focused on pr
 The project emphasizes practical full-stack development, clear application separation, role-based access, effective search functionality, and structured collaboration through version control and Pull Requests.
 
 All team members are encouraged to follow the agreed development workflow, communicate effectively, and prioritize the successful delivery of the core MVP requirements.
+
+
+## API Documentation
+
+The NestleERP backend provides a REST API for product discovery, product management, authentication, and role-based user management.
+
+The project's primary capstone requirement is **Topic 25 — Search API: Search records with filters, sorting and pagination**.
+
+### Local API
+
+```text
+http://localhost:4001
+```
+
+### Interactive Swagger Documentation
+
+When the backend is running, Swagger UI is available at:
+
+```text
+http://localhost:4001/api-docs
+```
+
+The raw OpenAPI specification is available at:
+
+```text
+http://localhost:4001/api-docs.json
+```
+
+Protected endpoints use JWT Bearer authentication. After logging in, copy the returned token and use the **Authorize** button in Swagger.
+
+### Postman Documentation
+
+An importable Postman collection is included at:
+
+```text
+backend/docs/NestleERP-Search-API.postman_collection.json
+```
+
+The collection contains the following variables:
+
+```text
+baseUrl
+token
+productId
+userId
+```
+
+The Login request automatically stores the returned JWT as the `token` collection variable.
+
+### Core Search API
+
+```http
+GET /api/products
+```
+
+Supported query parameters:
+
+| Parameter | Description | Example |
+| --- | --- | --- |
+| `search` | Search product name, description, category or product ID | `Milo` |
+| `category` | Filter by category | `Beverages` |
+| `minPrice` | Minimum product price | `1000` |
+| `maxPrice` | Maximum product price | `5000` |
+| `sortBy` | Field used for sorting | `price` |
+| `sortOrder` | `asc` or `desc` | `asc` |
+| `page` | Page number | `1` |
+| `limit` | Results per page, maximum 100 | `10` |
+
+Example:
+
+```http
+GET /api/products?search=Milo&category=Beverages&minPrice=1000&maxPrice=5000&sortBy=price&sortOrder=asc&page=1&limit=10
+```
+
+Example successful response:
+
+```json
+{
+  "success": true,
+  "message": "Products retrieved successfully",
+  "data": {
+    "products": [],
+    "pagination": {
+      "page": 1,
+      "limit": 10,
+      "totalItems": 25,
+      "totalPages": 3,
+      "hasNextPage": true,
+      "hasPreviousPage": false
+    }
+  }
+}
+```
+
+### Product Endpoints
+
+| Method | Endpoint | Authentication | Purpose |
+| --- | --- | --- | --- |
+| GET | `/api/products` | Public | Search, filter, sort and paginate products |
+| GET | `/api/products/categories` | Public | Get available product categories |
+| GET | `/api/products/categories/:category` | Public | Get products belonging to a category |
+| GET | `/api/products/:id` | Public | Get a product by ID |
+| POST | `/api/products` | Inventory Manager / Super Admin | Create product |
+| PUT | `/api/products/:id` | Inventory Manager / Super Admin | Update product |
+| DELETE | `/api/products/:id` | Inventory Manager / Super Admin | Delete product |
+
+### User Endpoints
+
+| Method | Endpoint | Authentication | Purpose |
+| --- | --- | --- | --- |
+| POST | `/api/users` | Public | Register user |
+| POST | `/api/users/login` | Public | Authenticate user and obtain JWT |
+| GET | `/api/users` | Super Admin | Get users |
+| POST | `/api/users/staff` | Super Admin | Create staff account |
+| GET | `/api/users/:id` | Super Admin | Get user by ID |
+| PUT | `/api/users/:id` | Super Admin | Update user or staff role |
+| DELETE | `/api/users/:id` | Super Admin | Delete user |
+
+### Health Check
+
+```http
+GET /health
+```
+
+Example:
+
+```json
+{
+  "success": true,
+  "status": "OK",
+  "message": "nestleERP backend is running",
+  "data": null
+}
+```
+
+### Authentication
+
+Protected routes require a JWT Bearer token:
+
+```http
+Authorization: Bearer <token>
+```
+
+A token is obtained from:
+
+```http
+POST /api/users/login
+```
+
+### API Validation
+
+The backend validates incoming requests, including:
+
+- Required fields
+- Product price and quantity
+- MongoDB Object IDs
+- Pagination values
+- Search sorting fields
+- Sort direction
+- Minimum and maximum prices
+- User email addresses
+- Password requirements
+- Phone numbers
+- User roles
+
+### Testing
+
+Run the complete automated backend test suite from the project root:
+
+```bash
+npm test
+```
+
+Current automated coverage includes the health endpoint, unknown routes, product search, product-ID search, category filtering, price filtering, sorting, pagination, combined search/filter/sort/pagination, empty result sets, and invalid query parameters.
