@@ -1,0 +1,171 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Product Management | nestleERP</title>
+
+    <link rel="stylesheet" href="../css/main.css" />
+    <link rel="stylesheet" href="../css/admin-products.css" />
+  </head>
+
+  <body>
+    <main class="page-section">
+      <div class="container">
+        <header class="admin-products__header">
+          <div>
+            <p class="admin-products__eyebrow">Inventory</p>
+
+            <a href="dashboard.html" class="dashboard-btn">
+              ← Back to Dashboard
+            </a>
+
+            <h1>Product Management</h1>
+
+            <p class="admin-products__description">
+              View and manage products in the inventory.
+            </p>
+          </div>
+
+          <a
+            class="button"
+            id="add-product-button"
+            href="./product-form.html"
+            hidden
+          >
+            Add Product
+          </a>
+        </header>
+
+        <div id="page-message" class="page-message" role="alert" hidden></div>
+
+        <section class="admin-products__toolbar" aria-label="Product controls">
+          <div class="form-field admin-products__search">
+            <label class="form-label" for="product-search">
+              Search products
+            </label>
+
+            <input
+              id="product-search"
+              type="search"
+              placeholder="Search by product name or ID..."
+              autocomplete="off"
+            />
+          </div>
+
+          <div class="form-field">
+            <label class="form-label" for="category-filter"> Category </label>
+
+            <select id="category-filter">
+              <option value="">All categories</option>
+            </select>
+          </div>
+
+          <div class="form-field">
+            <label class="form-label" for="min-price"> Minimum price </label>
+
+            <input
+              id="min-price"
+              type="number"
+              min="0"
+              step="0.01"
+              placeholder="Minimum price"
+            />
+          </div>
+
+          <div class="form-field">
+            <label class="form-label" for="max-price"> Maximum price </label>
+
+            <input
+              id="max-price"
+              type="number"
+              min="0"
+              step="0.01"
+              placeholder="Maximum price"
+            />
+          </div>
+
+          <div class="form-field">
+            <label class="form-label" for="sort-by"> Sort by </label>
+
+            <select id="sort-by">
+              <option value="">Default</option>
+              <option value="name">Name</option>
+              <option value="price">Price</option>
+              <option value="category">Category</option>
+              <option value="createdAt">Date Created</option>
+            </select>
+          </div>
+
+          <div class="form-field">
+            <label class="form-label" for="sort-order"> Sort order </label>
+
+            <select id="sort-order">
+              <option value="asc">Ascending</option>
+              <option value="desc">Descending</option>
+            </select>
+          </div>
+
+          <button
+            class="button button--secondary"
+            id="refresh-products"
+            type="button"
+          >
+            Refresh
+          </button>
+        </section>
+
+        <section class="admin-products__table-wrapper">
+          <div id="products-loading" class="admin-products__state">
+            Loading products...
+          </div>
+
+          <div id="products-empty" class="admin-products__state" hidden>
+            No products found.
+          </div>
+
+          <div class="admin-products__table-scroll">
+            <table class="admin-products__table">
+              <thead>
+                <tr>
+                  <th scope="col">Product</th>
+                  <th scope="col">Category</th>
+                  <th scope="col">Price</th>
+                  <th scope="col">Size</th>
+                  <th scope="col">Quantity</th>
+                  <th scope="col">Status</th>
+                  <th scope="col">Actions</th>
+                </tr>
+              </thead>
+
+              <tbody id="products-table-body"></tbody>
+            </table>
+          </div>
+        </section>
+
+        <div
+          id="pagination"
+          class="pagination"
+          aria-label="Product pagination"
+          hidden
+        >
+          <button
+            id="previous-page"
+            class="button button--secondary"
+            type="button"
+          >
+            Previous
+          </button>
+
+          <span id="pagination-info" aria-live="polite">Page 1 of 1</span>
+
+          <button id="next-page" class="button button--secondary" type="button">
+            Next
+          </button>
+        </div>
+      </div>
+    </main>
+
+    <script type="module" src="../js/admin-products.js"></script>
+  </body>
+</html>
