@@ -1,8 +1,295 @@
 const mongoose = require("mongoose");
+const crypto = require("crypto");
 const User = require("../models/users");
 const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
-const { sendStaffCredentials } = require("../utils/sendEmail");
+const { sendStaffCredentials, sendPasswordReset, } = require("../utils/sendEmail");
+
+const ADMIN_ROLES = [
+  "inventory-manager",
+  "super-admin",
+];
+
+const PASSWORD_REGEX =
+  /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@#$!%*?&_])[A-Za-z\d@#$!%*?&_]{12,30}$/;
+
+const PASSWORD_MESSAGE =
+  "Password must be 12 to 30 characters and contain at least one uppercase letter, one lowercase letter, one number, and one special character (@#$!%*?&_).";
+
+function isValidPassword(password) {
+  return (
+    typeof password === "string" &&
+    PASSWORD_REGEX.test(password)
+  );
+}
+
+exports.getSuperAdminBootstrapStatus =
+  async (req, res) => {
+    try {
+      const superAdminExists =
+        await User.exists({
+          role: "super-admin",
+        });
+
+      return res.status(200).json({
+        success: true,
+
+        data: {
+          available:
+            !Boolean(
+              superAdminExists,
+            ),
+        },
+      });
+    } catch (error) {
+      console.error(
+        "Bootstrap status error:",
+        error,
+      );
+
+      return res.status(500).json({
+        success: false,
+        message:
+          "Unable to check Super Admin registration status",
+        data: null,
+      });
+    }
+  };
+
+  exports.bootstrapSuperAdmin =
+  async (req, res) => {
+    try {
+      const bootstrapKey =
+        req.headers[
+          "x-bootstrap-key"
+        ];
+
+      const expectedKey =
+        process.env
+          .SUPER_ADMIN_BOOTSTRAP_KEY;
+
+      if (!expectedKey) {
+        return res.status(503).json({
+          success: false,
+          message:
+            "Super Admin bootstrap is not configured",
+          data: null,
+        });
+      }
+
+      if (
+        !bootstrapKey ||
+        bootstrapKey !== expectedKey
+      ) {
+        return res.status(403).json({
+          success: false,
+          message:
+            "Invalid bootstrap key",
+          data: null,
+        });
+      }
+
+      const existingSuperAdmin =
+        await User.exists({
+          role: "super-admin",
+        });
+
+      if (existingSuperAdmin) {
+        return res.status(409).json({
+          success: false,
+          message:
+            "The initial Super Admin has already been registered",
+          data: null,
+        });
+      }
+
+      const {
+        firstName,
+        lastName,
+        gender,
+        email,
+        password,
+        location,
+        phoneCountryCode,
+        phone,
+        address,
+      } = req.body;
+
+      if (
+        !firstName ||
+        !lastName ||
+        !gender ||
+        !email ||
+        !password ||
+        !location ||
+        !phoneCountryCode ||
+        !phone ||
+        !address
+      ) {
+        return res.status(400).json({
+          success: false,
+          message:
+            "All fields are required",
+          data: null,
+        });
+      }
+
+      if (
+        !["Male", "Female"].includes(
+          gender,
+        )
+      ) {
+        return res.status(400).json({
+          success: false,
+          message:
+            "Gender must be Male or Female",
+          data: null,
+        });
+      }
+
+      const allowedLocations =
+        User.schema.path(
+          "location",
+        ).enumValues;
+
+      if (
+        !allowedLocations.includes(
+          location,
+        )
+      ) {
+        return res.status(400).json({
+          success: false,
+          message:
+            "Please select a valid location",
+          data: null,
+        });
+      }
+
+      if (
+        !isValidPassword(password)
+      ) {
+        return res.status(400).json({
+          success: false,
+          message:
+            PASSWORD_MESSAGE,
+          data: null,
+        });
+      }
+
+      const normalizedEmail =
+        email
+          .trim()
+          .toLowerCase();
+
+      const fullPhoneNumber =
+        `${phoneCountryCode}${phone}`
+          .replace(/\s+/g, "");
+
+      const phoneRegex =
+        /^\+?[1-9]\d{1,14}$/;
+
+      if (
+        !phoneRegex.test(
+          fullPhoneNumber,
+        )
+      ) {
+        return res.status(400).json({
+          success: false,
+          message:
+            "Please provide a valid phone number",
+          data: null,
+        });
+      }
+
+      const existingUser =
+        await User.findOne({
+          $or: [
+            {
+              email:
+                normalizedEmail,
+            },
+            {
+              phone:
+                fullPhoneNumber,
+            },
+          ],
+        });
+
+      if (existingUser) {
+        return res.status(409).json({
+          success: false,
+          message:
+            "Email or phone number already exists",
+          data: null,
+        });
+      }
+
+      const hashedPassword =
+        await bcrypt.hash(
+          password,
+          10,
+        );
+
+      const user =
+        await User.create({
+          firstName:
+            firstName.trim(),
+
+          lastName:
+            lastName.trim(),
+
+          gender,
+
+          email:
+            normalizedEmail,
+
+          password:
+            hashedPassword,
+
+          location,
+
+          phone:
+            fullPhoneNumber,
+
+          address:
+            address.trim(),
+
+          role:
+            "super-admin",
+
+          HasAdminAccess: true,
+        });
+
+      const userResponse =
+        user.toObject();
+
+      delete userResponse.password;
+
+      return res.status(201).json({
+        success: true,
+        message:
+          "Initial Super Admin registered successfully",
+
+        data: {
+          user: userResponse,
+        },
+      });
+
+    } catch (error) {
+      console.error(
+        "Super Admin bootstrap error:",
+        error,
+      );
+
+      return res.status(500).json({
+        success: false,
+        message:
+          "Unable to register the initial Super Admin",
+        data: null,
+      });
+    }
+  };
+
 //Create-user endpoint
 exports.createUser = async (req, res) => {
   try {
@@ -142,6 +429,395 @@ exports.createUser = async (req, res) => {
   }
 };
 
+exports.changePassword =
+  async (req, res) => {
+    try {
+      const {
+        currentPassword,
+        newPassword,
+        confirmPassword,
+      } = req.body;
+
+      if (
+        !currentPassword ||
+        !newPassword ||
+        !confirmPassword
+      ) {
+        return res.status(400).json({
+          success: false,
+          message:
+            "Current password, new password and confirmation are required",
+          data: null,
+        });
+      }
+
+      if (
+        newPassword !==
+        confirmPassword
+      ) {
+        return res.status(400).json({
+          success: false,
+          message:
+            "New passwords do not match",
+          data: null,
+        });
+      }
+
+      if (
+        !isValidPassword(
+          newPassword,
+        )
+      ) {
+        return res.status(400).json({
+          success: false,
+          message:
+            PASSWORD_MESSAGE,
+          data: null,
+        });
+      }
+
+      const user =
+        await User.findById(
+          req.user.id,
+        );
+
+      if (!user) {
+        return res.status(404).json({
+          success: false,
+          message:
+            "User account not found",
+          data: null,
+        });
+      }
+
+      const currentPasswordValid =
+        await bcrypt.compare(
+          currentPassword,
+          user.password,
+        );
+
+      if (
+        !currentPasswordValid
+      ) {
+        return res.status(401).json({
+          success: false,
+          message:
+            "Current password is incorrect",
+          data: null,
+        });
+      }
+
+      const samePassword =
+        await bcrypt.compare(
+          newPassword,
+          user.password,
+        );
+
+      if (samePassword) {
+        return res.status(400).json({
+          success: false,
+          message:
+            "New password must be different from the current password",
+          data: null,
+        });
+      }
+
+      user.password =
+        await bcrypt.hash(
+          newPassword,
+          10,
+        );
+
+      user.passwordChangedAt =
+        new Date();
+
+      await user.save();
+
+      return res.status(200).json({
+        success: true,
+        message:
+          "Password changed successfully. Please sign in again.",
+        data: null,
+      });
+
+    } catch (error) {
+      console.error(
+        "Change password error:",
+        error,
+      );
+
+      return res.status(500).json({
+        success: false,
+        message:
+          "Unable to change password",
+        data: null,
+      });
+    }
+  };
+
+  exports.forgotPassword =
+  async (req, res) => {
+    const genericMessage =
+      "If an administrative account exists for this email, a password reset link has been sent.";
+
+    try {
+      const email =
+        String(
+          req.body.email || "",
+        )
+          .trim()
+          .toLowerCase();
+
+      if (!email) {
+        return res.status(400).json({
+          success: false,
+          message:
+            "Email address is required",
+          data: null,
+        });
+      }
+
+      const user =
+        await User.findOne({
+          email,
+        });
+
+      /*
+       * Do not reveal whether an email
+       * exists or which role it has.
+       */
+      if (
+        !user ||
+        !ADMIN_ROLES.includes(
+          user.role,
+        )
+      ) {
+        return res.status(200).json({
+          success: true,
+          message:
+            genericMessage,
+          data: null,
+        });
+      }
+
+      const resetToken =
+        crypto
+          .randomBytes(32)
+          .toString("hex");
+
+      const hashedToken =
+        crypto
+          .createHash("sha256")
+          .update(resetToken)
+          .digest("hex");
+
+      user.passwordResetToken =
+        hashedToken;
+
+      user.passwordResetExpires =
+        new Date(
+          Date.now() +
+            20 * 60 * 1000,
+        );
+
+      await user.save({
+        validateBeforeSave: false,
+      });
+
+      const adminLoginUrl =
+        process.env
+          .ADMIN_LOGIN_URL ||
+        "http://localhost:8080/frontend/pages/admin-login.html";
+
+      const resetUrl =
+        new URL(
+          adminLoginUrl,
+        );
+
+      resetUrl.searchParams.set(
+        "resetToken",
+        resetToken,
+      );
+
+      try {
+        await sendPasswordReset({
+          email: user.email,
+
+          name:
+            `${user.firstName} ${user.lastName}`.trim(),
+
+          resetUrl:
+            resetUrl.toString(),
+        });
+      } catch (emailError) {
+        console.error(
+          "Password reset email error:",
+          emailError,
+        );
+
+        user.passwordResetToken =
+          undefined;
+
+        user.passwordResetExpires =
+          undefined;
+
+        await user.save({
+          validateBeforeSave:
+            false,
+        });
+      }
+
+      return res.status(200).json({
+        success: true,
+        message:
+          genericMessage,
+        data: null,
+      });
+
+    } catch (error) {
+      console.error(
+        "Forgot password error:",
+        error,
+      );
+
+      return res.status(500).json({
+        success: false,
+        message:
+          "Unable to process password reset request",
+        data: null,
+      });
+    }
+  };
+
+  exports.resetPassword =
+  async (req, res) => {
+    try {
+      const {
+        newPassword,
+        confirmPassword,
+      } = req.body;
+
+      if (
+        !newPassword ||
+        !confirmPassword
+      ) {
+        return res.status(400).json({
+          success: false,
+          message:
+            "New password and confirmation are required",
+          data: null,
+        });
+      }
+
+      if (
+        newPassword !==
+        confirmPassword
+      ) {
+        return res.status(400).json({
+          success: false,
+          message:
+            "Passwords do not match",
+          data: null,
+        });
+      }
+
+      if (
+        !isValidPassword(
+          newPassword,
+        )
+      ) {
+        return res.status(400).json({
+          success: false,
+          message:
+            PASSWORD_MESSAGE,
+          data: null,
+        });
+      }
+
+      const token =
+        req.params.token;
+
+      const hashedToken =
+        crypto
+          .createHash("sha256")
+          .update(token)
+          .digest("hex");
+
+      const user =
+        await User.findOne({
+          passwordResetToken:
+            hashedToken,
+
+          passwordResetExpires: {
+            $gt: new Date(),
+          },
+        }).select(
+          "+passwordResetToken +passwordResetExpires",
+        );
+
+      if (!user) {
+        return res.status(400).json({
+          success: false,
+          message:
+            "Password reset link is invalid or has expired",
+          data: null,
+        });
+      }
+
+      const samePassword =
+        await bcrypt.compare(
+          newPassword,
+          user.password,
+        );
+
+      if (samePassword) {
+        return res.status(400).json({
+          success: false,
+          message:
+            "Choose a password different from your current password",
+          data: null,
+        });
+      }
+
+      user.password =
+        await bcrypt.hash(
+          newPassword,
+          10,
+        );
+
+      user.passwordResetToken =
+        undefined;
+
+      user.passwordResetExpires =
+        undefined;
+
+      user.passwordChangedAt =
+        new Date();
+
+      await user.save();
+
+      return res.status(200).json({
+        success: true,
+        message:
+          "Password reset successfully. You can now sign in.",
+        data: null,
+      });
+
+    } catch (error) {
+      console.error(
+        "Reset password error:",
+        error,
+      );
+
+      return res.status(500).json({
+        success: false,
+        message:
+          "Unable to reset password",
+        data: null,
+      });
+    }
+  };
+  
 // Search User by First Name or Last Name, Email, or ID endpoint
 exports.searchUsers = async (req, res) => {
   try {

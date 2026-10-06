@@ -133,4 +133,19 @@ export const API_ENDPOINTS =
       `${API_BASE_URL}/users/${encodeURIComponent(
         userId,
       )}`,
+
+    userBootstrapStatus:
+      `${API_BASE_URL}/users/bootstrap-status`,
+
+    userBootstrapSuperAdmin:
+      `${API_BASE_URL}/users/bootstrap-super-admin`,
+
+    userForgotPassword:
+      `${API_BASE_URL}/users/forgot-password`,
+
+    userResetPassword: (token) =>
+      `${API_BASE_URL}/users/reset-password/${encodeURIComponent(token)}`,
+
+    userChangePassword:
+      `${API_BASE_URL}/users/change-password`,
   });

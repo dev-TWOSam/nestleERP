@@ -17,13 +17,26 @@ const userSchema = new mongoose.Schema(
       required: [true, "Please select your gender"],
     },
     email: {
-      type: String,
-      required: [true, "Please enter your email"],
-      unique: true,
-    },
+  type: String,
+  required: [true, "Please enter your email"],
+  unique: true,
+  lowercase: true,
+  trim: true,
+},
     password: {
       type: String,
       required: [true, "Please enter your password"],
+    },
+    passwordResetToken: {
+      type: String,
+      select: false,
+    },
+    passwordResetExpires: {
+      type: Date,
+      select: false,
+    },
+    passwordChangedAt: {
+      type: Date,
     },
     location: {
       type: String,

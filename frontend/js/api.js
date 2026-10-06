@@ -781,54 +781,84 @@ export const api =
      USERS
   ------------------------------------- */
 
-    users:
-      Object.freeze({
+  users: Object.freeze({
+    create: (user) =>
+      apiRequest(
+        API_ENDPOINTS.users,
+        {
+          method: "POST",
+          body: user,
+        },
+      ),
 
-        create:
-          (user) =>
-            apiRequest(
-              API_ENDPOINTS.users,
-              {
-                method:
-                  "POST",
+    login: async (
+      credentials,
+      { remember = false } = {},
+    ) => {
+      const response = await apiRequest(
+        API_ENDPOINTS.userLogin,
+        {
+          method: "POST",
+          body: credentials,
+        },
+      );
 
-                body:
-                  user,
-              },
-            ),
+      if (response?.token) {
+        saveAuthSession({
+          accessToken: response.token,
+          remember,
+        });
+      }
 
+      return response;
+    },
 
-        login:
-          async (
-            credentials,
-            {
-              remember = false,
-            } = {},
-          ) => {
-            const response =
-              await apiRequest(
-                API_ENDPOINTS.userLogin,
-                {
-                  method:
-                    "POST",
+    bootstrapStatus: () =>
+      apiRequest(
+        API_ENDPOINTS.userBootstrapStatus,
+      ),
 
-                  body:
-                    credentials,
-                },
-              );
-
-            if (
-              response?.token
-            ) {
-              saveAuthSession({
-                accessToken:
-                  response.token,
-
-                remember,
-              });
-            }
-
-            return response;
+    bootstrapSuperAdmin: (
+      user,
+      bootstrapKey,
+    ) =>
+      apiRequest(
+        API_ENDPOINTS.userBootstrapSuperAdmin,
+        {
+          method: "POST",
+          headers: {
+            "X-Bootstrap-Key": bootstrapKey,
           },
-      }),
-  });
+          body: user,
+        },
+      ),
+
+    forgotPassword: (email) =>
+      apiRequest(
+        API_ENDPOINTS.userForgotPassword,
+        {
+          method: "POST",
+          body: { email },
+        },
+      ),
+
+    resetPassword: (token, passwords) =>
+      apiRequest(
+        API_ENDPOINTS.userResetPassword(token),
+        {
+          method: "POST",
+          body: passwords,
+        },
+      ),
+
+    changePassword: (passwords) =>
+      apiRequest(
+        API_ENDPOINTS.userChangePassword,
+        {
+          method: "PATCH",
+          requiresAuth: true,
+          body: passwords,
+        },
+      ),
+  }),
+});

@@ -724,3 +724,12 @@
     width: 100%;
   }
 }
+
+.dashboard-action-card--button {
+  width: 100%;
+  color: inherit;
+  background: #fff;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}

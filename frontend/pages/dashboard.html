@@ -161,6 +161,18 @@
                     <small>Review administrative accounts and roles.</small>
                   </span>
                 </a>
+
+                <button
+                  class="dashboard-action-card dashboard-action-card--button"
+                  id="change-password-open"
+                  type="button"
+                >
+                  <span class="dashboard-action-card__icon" aria-hidden="true">🔐</span>
+                  <span>
+                    <strong>Change password</strong>
+                    <small>Update your administrative account password.</small>
+                  </span>
+                </button>
               </div>
             </article>
 
@@ -408,6 +420,101 @@
         </div>
       </form>
     </dialog>
+
+    <dialog
+  class="dashboard-dialog"
+  id="change-password-dialog"
+>
+  <form
+    class="dashboard-dialog__card"
+    id="change-password-form"
+  >
+    <div class="dashboard-dialog__heading">
+      <div>
+        <p class="dashboard-eyebrow">
+          Account security
+        </p>
+
+        <h2>
+          Change password
+        </h2>
+
+        <p>
+          Enter your current password before choosing a new one.
+        </p>
+      </div>
+
+      <button
+        class="dashboard-dialog__close"
+        id="change-password-close"
+        type="button"
+      >
+        ×
+      </button>
+    </div>
+
+    <div class="form-field">
+      <label class="form-label">
+        Current password
+      </label>
+
+      <input
+        name="currentPassword"
+        type="password"
+        required
+        autocomplete="current-password"
+      />
+    </div>
+
+    <div class="form-field">
+      <label class="form-label">
+        New password
+      </label>
+
+      <input
+        name="newPassword"
+        type="password"
+        minlength="12"
+        maxlength="30"
+        required
+        autocomplete="new-password"
+      />
+    </div>
+
+    <div class="form-field">
+      <label class="form-label">
+        Confirm new password
+      </label>
+
+      <input
+        name="confirmPassword"
+        type="password"
+        minlength="12"
+        maxlength="30"
+        required
+        autocomplete="new-password"
+      />
+    </div>
+
+    <div class="dashboard-dialog__actions">
+      <button
+        class="button button--secondary"
+        id="change-password-cancel"
+        type="button"
+      >
+        Cancel
+      </button>
+
+      <button
+        class="button"
+        id="change-password-save"
+        type="submit"
+      >
+        Change password
+      </button>
+    </div>
+  </form>
+</dialog>
 
     <script type="module" src="../js/main.js"></script>
     <script type="module" src="../js/dashboard.js"></script>

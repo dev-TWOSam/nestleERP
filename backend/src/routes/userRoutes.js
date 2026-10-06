@@ -3,9 +3,55 @@ const express = require("express");
 const authenticate = require("../middleware/auth");
 const authorize = require("../middleware/authorize");
 
+const userController = require("../controllers/users");
+
 const router = express.Router();
 
-const userController = require("../controllers/users");
+// =========================================
+// INITIAL SUPER ADMIN
+// =========================================
+
+router.get(
+  "/bootstrap-status",
+  userController
+    .getSuperAdminBootstrapStatus,
+);
+
+router.post(
+  "/bootstrap-super-admin",
+  userController
+    .bootstrapSuperAdmin,
+);
+
+// =========================================
+// AUTHENTICATION
+// =========================================
+
+router.post(
+  "/forgot-password",
+  userController.forgotPassword,
+);
+
+router.post(
+  "/reset-password/:token",
+  userController.resetPassword,
+);
+
+// =========================================
+// CHANGE OWN PASSWORD
+//
+// Both administrative roles can use it.
+// =========================================
+
+router.patch(
+  "/change-password",
+  authenticate,
+  authorize(
+    "inventory-manager",
+    "super-admin",
+  ),
+  userController.changePassword,
+);
 
 // Route to create a new user
 router.post("/", userController.createUser);

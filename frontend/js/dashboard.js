@@ -57,6 +57,13 @@ const roleSelect = document.querySelector("#role-select");
 const roleSaveButton = document.querySelector("#role-save");
 const roleDialogClose = document.querySelector("#role-dialog-close");
 const roleCancel = document.querySelector("#role-cancel");
+const changePasswordOpen = document.querySelector( "#change-password-open",);
+const changePasswordDialog = document.querySelector("#change-password-dialog",);
+const changePasswordForm = document.querySelector( "#change-password-form", );
+const changePasswordClose = document.querySelector( "#change-password-close",);
+const changePasswordCancel = document.querySelector( "#change-password-cancel",);
+const changePasswordSave = document.querySelector( "#change-password-save",);
+
 
 let users = [];
 let currentUser = null;
@@ -697,5 +704,116 @@ roleDialog.addEventListener("click", (event) => {
     closeRoleDialog();
   }
 });
+
+function closeChangePasswordDialog() {
+  changePasswordDialog.close();
+  changePasswordForm.reset();
+}
+
+
+async function changePassword(
+  event,
+) {
+  event.preventDefault();
+
+  const payload =
+    Object.fromEntries(
+      new FormData(
+        changePasswordForm,
+      ).entries(),
+    );
+
+  if (
+    payload.newPassword !==
+    payload.confirmPassword
+  ) {
+    showPageMessage(
+      "New passwords do not match.",
+      {
+        type: "error",
+        container:
+          dashboardMessage,
+      },
+    );
+
+    return;
+  }
+
+  setButtonLoading(
+    changePasswordSave,
+    true,
+    "Changing...",
+  );
+
+  try {
+    const response =
+      await api.users
+        .changePassword(
+          payload,
+        );
+
+    closeChangePasswordDialog();
+
+    clearAuthSession();
+
+    sessionStorage.setItem(
+      "nestleERP.adminLoginMessage",
+      response?.message ||
+        "Password changed successfully. Please sign in again.",
+    );
+
+    window.location.replace(
+      "./admin-login.html",
+    );
+
+  } catch (error) {
+    showPageMessage(
+      error instanceof ApiError
+        ? error.message
+        : "Unable to change password.",
+      {
+        type: "error",
+        container:
+          dashboardMessage,
+      },
+    );
+
+  } finally {
+    setButtonLoading(
+      changePasswordSave,
+      false,
+    );
+  }
+}
+
+changePasswordOpen
+  ?.addEventListener(
+    "click",
+    () => {
+      changePasswordDialog
+        .showModal();
+    },
+  );
+
+
+changePasswordForm
+  ?.addEventListener(
+    "submit",
+    changePassword,
+  );
+
+
+changePasswordClose
+  ?.addEventListener(
+    "click",
+    closeChangePasswordDialog,
+  );
+
+
+changePasswordCancel
+  ?.addEventListener(
+    "click",
+    closeChangePasswordDialog,
+  );
 
 initializeDashboard();
