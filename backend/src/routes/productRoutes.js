@@ -9,6 +9,24 @@ const upload = require("../middleware/upload");
 
 const router = express.Router();
 
+// Route to create a new product
+router.post(
+  "/",
+  authenticate,
+  authorize("inventory-manager", "super-admin"),
+  upload.single("photo"),
+  productController.createProduct,
+);
+
+// Route to update a product by ID
+router.put(
+  "/:id",
+  authenticate,
+  authorize("inventory-manager", "super-admin"),
+  upload.single("photo"),
+  productController.updateProduct,
+);
+
 // Route to get all products
 router.get(
   "/",

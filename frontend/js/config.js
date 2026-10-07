@@ -95,24 +95,24 @@ export const API_ENDPOINTS =
     // =====================================
 
     products:
-      `${API_BASE_URL}/products`,
+  `${API_BASE_URL}/products`,
 
-    productCategories:
-      `${API_BASE_URL}/products/categories`,
+productCategories:
+  `${API_BASE_URL}/products/categories`,
 
-    productById: (
-      productId,
-    ) =>
-      `${API_BASE_URL}/products/${encodeURIComponent(
-        productId,
-      )}`,
+productById: (productId) =>
+  `${API_BASE_URL}/products/${encodeURIComponent(productId)}`,
 
-    productsByCategory: (
-      category,
-    ) =>
-      `${API_BASE_URL}/products/categories/${encodeURIComponent(
-        category,
-      )}`,
+productsByCategory: (category) =>
+  `${API_BASE_URL}/products/categories/${encodeURIComponent(category)}`,
+
+updateProduct: (productId) =>
+  `${API_BASE_URL}/products/${encodeURIComponent(productId)}`,
+
+deleteProduct: (productId) =>
+  `${API_BASE_URL}/products/${encodeURIComponent(productId)}`,
+
+      
 
 
     // =====================================
