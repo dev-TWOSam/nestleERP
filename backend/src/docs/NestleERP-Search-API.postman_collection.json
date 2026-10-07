@@ -9,7 +9,7 @@
   "variable": [
     {
       "key": "baseUrl",
-      "value": "http://localhost:4001"
+      "value": "https://nestleerp-search-api.onrender.com"
     },
     {
       "key": "token",

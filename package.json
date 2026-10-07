@@ -8,6 +8,7 @@
     "test": "npm --prefix backend run test"
   },
   "dependencies": {
+    "express": "^5.2.1",
     "nodemailer": "^10.0.15"
   }
 }

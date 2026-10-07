@@ -1367,7 +1367,7 @@ The project's primary capstone requirement is **Topic 25 — Search API: Search 
 ### Local API
 
 ```text
-http://localhost:4001
+https://nestleerp-search-api.onrender.com/
 ```
 
 ### Interactive Swagger Documentation
@@ -1375,13 +1375,13 @@ http://localhost:4001
 When the backend is running, Swagger UI is available at:
 
 ```text
-http://localhost:4001/api-docs
+https://nestleerp-search-api.onrender.com/api-docs/
 ```
 
 The raw OpenAPI specification is available at:
 
 ```text
-http://localhost:4001/api-docs.json
+https://nestleerp-search-api.onrender.com/api-docs.json
 ```
 
 Protected endpoints use JWT Bearer authentication. After logging in, copy the returned token and use the **Authorize** button in Swagger.

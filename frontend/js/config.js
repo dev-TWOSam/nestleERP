@@ -5,7 +5,8 @@
  * files never need to hardcode API URLs.
  */
 
-const DEFAULT_API_ORIGIN = "http://localhost:4001";
+const DEFAULT_API_ORIGIN =
+  "https://nestleerp-search-api.onrender.com";
 
 const runtimeConfig =
   typeof window !== "undefined" &&
