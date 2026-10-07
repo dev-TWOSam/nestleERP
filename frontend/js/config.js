@@ -6,7 +6,7 @@
  */
 
 const DEFAULT_API_ORIGIN =
-  "https://nestleerp-search-api.onrender.com";
+  "http://localhost:4001";
 
 const runtimeConfig =
   typeof window !== "undefined" &&
