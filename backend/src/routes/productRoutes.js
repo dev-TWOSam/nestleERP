@@ -14,7 +14,7 @@ router.post(
   "/",
   authenticate,
   authorize("inventory-manager", "super-admin"),
-  upload.single("photo"),
+  upload.single("image"),
   productController.createProduct,
 );
 
@@ -23,7 +23,7 @@ router.put(
   "/:id",
   authenticate,
   authorize("inventory-manager", "super-admin"),
-  upload.single("photo"),
+  upload.single("image"),
   productController.updateProduct,
 );
 
