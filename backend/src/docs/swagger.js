@@ -92,7 +92,7 @@ role-based administration.
     {
       url:
         process.env.API_BASE_URL ||
-        "http://localhost:4001",
+        "https://nestleerp-search-api.onrender.com",
 
       description:
         "Current API server",
