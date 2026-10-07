@@ -1,7 +1,17 @@
 const User = require("../models/users");
 const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
+const nigeriaStates = require("../constants/nigeriaStates");
 const { sendStaffCredentials } = require("../utils/sendEmail");
+const {
+  isValidEmail,
+  isValidName,
+  isValidPassword,
+  normalizeEmail,
+  PASSWORD_POLICY_MESSAGE,
+  TEMPORARY_PASSWORD_TTL_MS,
+} = require("../services/accountSecurity");
+
 //Create-user endpoint
 exports.createUser = async (req, res) => {
   try {
@@ -36,15 +46,16 @@ exports.createUser = async (req, res) => {
       });
     }
 
+    const email = normalizeEmail(req.body.email);
+
     // Validate the name field to ensure it only contains letters, spaces, hyphens, and apostrophes, and is between 2 and 50 characters long
-    const nameRegex = /^[a-zA-Z\s\-']{2,50}$/;
-    if (!nameRegex.test(req.body.firstName.trim())) {
+    if (!isValidName(req.body.firstName)) {
       return res.status(400).json({
         message:
           "First name must be between 2 and 50 characters and can only contain letters, spaces, hyphens, and apostrophes",
       });
     }
-    if (!nameRegex.test(req.body.lastName.trim())) {
+    if (!isValidName(req.body.lastName)) {
       return res.status(400).json({
         message:
           "Last name must be between 2 and 50 characters and can only contain letters, spaces, hyphens, and apostrophes",
@@ -52,8 +63,7 @@ exports.createUser = async (req, res) => {
     }
 
     // Validate the email format using a regular expression
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(req.body.email)) {
+    if (!isValidEmail(email)) {
       return res.status(400).json({
         message:
           "Please provide a valid email address (e.g., example@domain.com).",
@@ -66,10 +76,7 @@ exports.createUser = async (req, res) => {
       });
     }
 
-    // Validate the password to ensure it contains at least one uppercase letter, one lowercase letter, one digit, and one special character
-    const passwordRegex =
-      /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@#$!%*?&_])[A-Za-z\d@#$!%*?&_]{12,30}$/;
-    if (!passwordRegex.test(req.body.password)) {
+    if (!isValidPassword(req.body.password)) {
       return res.status(400).json({
         message:
           "Password must contain at least one uppercase letter, one lowercase letter, one digit, and one special character (@$!%*?&).",
@@ -93,11 +100,11 @@ exports.createUser = async (req, res) => {
 
     // Check if the email or phone number already exists in the database
     const existingUser = await User.findOne({
-      $or: [{ email: req.body.email }, { phone: fullPhoneNumber }],
+      $or: [{ email }, { phone: fullPhoneNumber }],
     });
     // If an existing user is found, check which field is duplicated and return an appropriate message
     if (existingUser) {
-      if (existingUser.email === req.body.email) {
+      if (existingUser.email === email) {
         return res.status(400).json({ message: "Email already exists" });
       }
       if (existingUser.phone === fullPhoneNumber) {
@@ -113,7 +120,7 @@ exports.createUser = async (req, res) => {
     const user = new User({
       firstName: req.body.firstName,
       lastName: req.body.lastName,
-      email: req.body.email,
+      email,
       phone: fullPhoneNumber, // Use the full phone number with country code
       password: hashedPassword,
       gender: req.body.gender,
@@ -240,7 +247,9 @@ exports.login = async (req, res) => {
         .json({ message: "Invalid data format. Fields must be strings" });
 
     //find user
-    const user = await User.findOne({ email: req.body.email });
+    const user = await User.findOne({
+      email: normalizeEmail(req.body.email),
+    });
 
     //check if user exists
     if (!user)
@@ -254,6 +263,22 @@ exports.login = async (req, res) => {
 
     if (!isPasswordValid)
       return res.status(401).json({ message: "Invalid email or password" });
+
+    if (user.mustChangePassword) {
+      if (
+        !user.temporaryPasswordExpiresAt ||
+        user.temporaryPasswordExpiresAt <= new Date()
+      ) {
+        return res.status(401).json({
+          code: "TEMPORARY_PASSWORD_EXPIRED",
+          message: "Temporary password expired. Request a password reset.",
+        });
+      }
+      return res.status(403).json({
+        code: "PASSWORD_CHANGE_REQUIRED",
+        message: "Change your temporary password before signing in.",
+      });
+    }
 
     //Sign the token
     const token = await jwt.sign(
@@ -390,32 +415,87 @@ exports.deleteUserById = async (req, res) => {
       .json({ message: "Error deleting user", error: error.message });
   }
 };
+
+// Create-staff endpoint
 exports.createStaff = async (req, res) => {
   try {
-    const { name, email, password } = req.body;
+    const {
+      name,
+      email,
+      password,
+      gender,
+      location,
+      phoneCountryCode,
+      phone,
+      address,
+    } = req.body;
 
-    if (!name || !email || !password) {
+    if (
+      typeof name !== "string" ||
+      typeof email !== "string" ||
+      typeof password !== "string" ||
+      typeof gender !== "string" ||
+      typeof location !== "string" ||
+      typeof phoneCountryCode !== "string" ||
+      typeof phone !== "string" ||
+      typeof address !== "string" ||
+      !name.trim() ||
+      !email.trim() ||
+      !password ||
+      !phoneCountryCode.trim() ||
+      !phone.trim() ||
+      !address.trim()
+    ) {
       return res.status(400).json({
-        message: "Name, email and password are required",
+        message:
+          "Name, email, password, gender, location, phone, and address are required",
       });
+    }
+
+    const normalizedEmail = normalizeEmail(email);
+    if (!isValidEmail(normalizedEmail)) {
+      return res
+        .status(400)
+        .json({ message: "Please provide a valid email address" });
+    }
+
+    if (
+      !["Male", "Female"].includes(gender) ||
+      !nigeriaStates.includes(location)
+    ) {
+      return res
+        .status(400)
+        .json({ message: "Please provide a valid gender and location" });
+    }
+
+    const fullPhoneNumber = (phoneCountryCode + phone).replace(/\s+/g, "");
+    if (!/^\+?[1-9]\d{1,14}$/.test(fullPhoneNumber)) {
+      return res
+        .status(400)
+        .json({ message: "Please provide a valid phone number" });
     }
 
     const nameParts = name.trim().split(/\s+/);
 
-    if (nameParts.length < 2) {
+    const firstName = nameParts[0];
+    const lastName = nameParts.slice(1).join(" ");
+    if (!lastName || !isValidName(firstName) || !isValidName(lastName)) {
       return res.status(400).json({
         message: "Please provide the staff member's first and last name",
       });
     }
 
-    const firstName = nameParts[0];
-    const lastName = nameParts.slice(1).join(" ");
+    if (!isValidPassword(password)) {
+      return res.status(400).json({ message: PASSWORD_POLICY_MESSAGE });
+    }
 
-    const existingUser = await User.findOne({ email });
+    const existingUser = await User.findOne({
+      $or: [{ email: normalizedEmail }, { phone: fullPhoneNumber }],
+    });
 
     if (existingUser) {
       return res.status(409).json({
-        message: "A user with this email already exists",
+        message: "A user with this email or phone number already exists",
       });
     }
 
@@ -425,15 +505,23 @@ exports.createStaff = async (req, res) => {
     const staff = new User({
       firstName,
       lastName,
-      email,
+      email: normalizedEmail,
+      gender,
+      location,
+      phone: fullPhoneNumber,
+      address,
       password: hashedPassword,
       role: "inventory-manager",
       HasAdminAccess: false,
+      mustChangePassword: true,
+      temporaryPasswordExpiresAt: new Date(
+        Date.now() + TEMPORARY_PASSWORD_TTL_MS,
+      ),
     });
 
     await staff.save();
-    await sendStaffCredentials({ 
-      email,
+    await sendStaffCredentials({
+      email: normalizedEmail,
       name,
       password,
     });
