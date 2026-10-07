@@ -14,7 +14,7 @@ const maxPriceInput = document.getElementById("maxPrice");
 
 // Paginatio State
 let currentPage = 1;
-const limit = 10;
+const limit = 12;
 let pagination = null;
 let currentSearch = "";
 
