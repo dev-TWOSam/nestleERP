@@ -14,30 +14,67 @@ const userSchema = new mongoose.Schema(
     gender: {
       type: String,
       enum: ["Male", "Female"],
-      required: [true, "Please select your gender"],
     },
     email: {
       type: String,
       required: [true, "Please enter your email"],
+      trim: true,
+      lowercase: true,
       unique: true,
     },
     password: {
       type: String,
       required: [true, "Please enter your password"],
     },
+    mustChangePassword: {
+      type: Boolean,
+      default: false,
+    },
+    temporaryPasswordExpiresAt: {
+      type: Date,
+      default: null,
+    },
+    passwordResetOtpHash: {
+      type: String,
+      default: null,
+      select: false,
+    },
+    passwordResetOtpExpiresAt: {
+      type: Date,
+      default: null,
+      select: false,
+    },
+    passwordResetOtpSentAt: {
+      type: Date,
+      default: null,
+      select: false,
+    },
+    passwordResetOtpAttempts: {
+      type: Number,
+      default: 0,
+      select: false,
+    },
+    passwordResetTokenHash: {
+      type: String,
+      default: null,
+      select: false,
+    },
+    passwordResetTokenExpiresAt: {
+      type: Date,
+      default: null,
+      select: false,
+    },
     location: {
       type: String,
       enum: nigeriaStates,
-      required: [true, "Please enter your location"],
     },
     phone: {
       type: String,
-      required: [true, "Please enter your phone number"],
       unique: true,
+      sparse: true,
     },
     address: {
       type: String,
-      required: [true, "Please enter your address"],
     },
     HasAdminAccess: {
       type: Boolean,
@@ -48,6 +85,39 @@ const userSchema = new mongoose.Schema(
       enum: ["user", "inventory-manager", "super-admin"],
       default: "user",
       required: true,
+    },
+    mustChangePassword: {
+      type: Boolean,
+      default: false,
+    },
+    temporaryPasswordExpiresAt: {
+      type: Date,
+      default: null,
+    },
+    passwordResetOtpHash: {
+      type: String,
+      select: false,
+    },
+    passwordResetOtpExpiresAt: {
+      type: Date,
+      select: false,
+    },
+    passwordResetOtpAttempts: {
+      type: Number,
+      default: 0,
+      select: false,
+    },
+    passwordResetRequestedAt: {
+      type: Date,
+      select: false,
+    },
+    passwordResetTokenHash: {
+      type: String,
+      select: false,
+    },
+    passwordResetTokenExpiresAt: {
+      type: Date,
+      select: false,
     },
   },
   {

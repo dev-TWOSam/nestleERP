@@ -1,7 +1,21 @@
 const User = require("../models/users");
 const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
-const { sendStaffCredentials } = require("../utils/sendEmail");
+const emailService = require("../utils/sendEmail");
+const accountSecurity = require("../services/accountSecurity");
+
+const sendSecurityResponse = async (res, action, successStatus = 200) => {
+  try {
+    const result = await action();
+    return res.status(successStatus).json(result);
+  } catch (error) {
+    if (error.status) {
+      return res.status(error.status).json({ message: error.message });
+    }
+    console.error("Account security request failed:", error.message);
+    return res.status(500).json({ message: "Account security request failed" });
+  }
+};
 //Create-user endpoint
 exports.createUser = async (req, res) => {
   try {
@@ -36,15 +50,16 @@ exports.createUser = async (req, res) => {
       });
     }
 
+    const email = normalizeEmail(req.body.email);
+
     // Validate the name field to ensure it only contains letters, spaces, hyphens, and apostrophes, and is between 2 and 50 characters long
-    const nameRegex = /^[a-zA-Z\s\-']{2,50}$/;
-    if (!nameRegex.test(req.body.firstName.trim())) {
+    if (!isValidName(req.body.firstName)) {
       return res.status(400).json({
         message:
           "First name must be between 2 and 50 characters and can only contain letters, spaces, hyphens, and apostrophes",
       });
     }
-    if (!nameRegex.test(req.body.lastName.trim())) {
+    if (!isValidName(req.body.lastName)) {
       return res.status(400).json({
         message:
           "Last name must be between 2 and 50 characters and can only contain letters, spaces, hyphens, and apostrophes",
@@ -52,8 +67,7 @@ exports.createUser = async (req, res) => {
     }
 
     // Validate the email format using a regular expression
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(req.body.email)) {
+    if (!isValidEmail(email)) {
       return res.status(400).json({
         message:
           "Please provide a valid email address (e.g., example@domain.com).",
@@ -66,10 +80,7 @@ exports.createUser = async (req, res) => {
       });
     }
 
-    // Validate the password to ensure it contains at least one uppercase letter, one lowercase letter, one digit, and one special character
-    const passwordRegex =
-      /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@#$!%*?&_])[A-Za-z\d@#$!%*?&_]{12,30}$/;
-    if (!passwordRegex.test(req.body.password)) {
+    if (!isValidPassword(req.body.password)) {
       return res.status(400).json({
         message:
           "Password must contain at least one uppercase letter, one lowercase letter, one digit, and one special character (@$!%*?&).",
@@ -93,11 +104,11 @@ exports.createUser = async (req, res) => {
 
     // Check if the email or phone number already exists in the database
     const existingUser = await User.findOne({
-      $or: [{ email: req.body.email }, { phone: fullPhoneNumber }],
+      $or: [{ email }, { phone: fullPhoneNumber }],
     });
     // If an existing user is found, check which field is duplicated and return an appropriate message
     if (existingUser) {
-      if (existingUser.email === req.body.email) {
+      if (existingUser.email === email) {
         return res.status(400).json({ message: "Email already exists" });
       }
       if (existingUser.phone === fullPhoneNumber) {
@@ -113,7 +124,7 @@ exports.createUser = async (req, res) => {
     const user = new User({
       firstName: req.body.firstName,
       lastName: req.body.lastName,
-      email: req.body.email,
+      email,
       phone: fullPhoneNumber, // Use the full phone number with country code
       password: hashedPassword,
       gender: req.body.gender,
@@ -240,7 +251,13 @@ exports.login = async (req, res) => {
         .json({ message: "Invalid data format. Fields must be strings" });
 
     //find user
-    const user = await User.findOne({ email: req.body.email });
+    const normalizedEmail = req.body.email.trim();
+    const user = await User.findOne({
+      email: new RegExp(
+        `^${normalizedEmail.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}$`,
+        "i",
+      ),
+    });
 
     //check if user exists
     if (!user)
@@ -254,6 +271,22 @@ exports.login = async (req, res) => {
 
     if (!isPasswordValid)
       return res.status(401).json({ message: "Invalid email or password" });
+
+    if (user.mustChangePassword) {
+      if (
+        !user.temporaryPasswordExpiresAt ||
+        user.temporaryPasswordExpiresAt.getTime() <= Date.now()
+      ) {
+        return res.status(403).json({
+          message: "Temporary password has expired. Request a password reset.",
+          passwordChangeRequired: true,
+        });
+      }
+      return res.status(200).json({
+        message: "Change your temporary password before continuing",
+        passwordChangeRequired: true,
+      });
+    }
 
     //Sign the token
     const token = await jwt.sign(
@@ -390,59 +423,110 @@ exports.deleteUserById = async (req, res) => {
       .json({ message: "Error deleting user", error: error.message });
   }
 };
+
+// Create-staff endpoint
 exports.createStaff = async (req, res) => {
   try {
-    const { name, email, password } = req.body;
+    const { firstName, lastName, role, email, password } = req.body;
 
-    if (!name || !email || !password) {
+    if (!firstName || !lastName || !role || !email || !password) {
       return res.status(400).json({
-        message: "Name, email and password are required",
+        message: "First name, last name, email, password and role are required",
       });
     }
 
-    const nameParts = name.trim().split(/\s+/);
-
-    if (nameParts.length < 2) {
+    if (
+      typeof firstName !== "string" ||
+      typeof lastName !== "string" ||
+      typeof role !== "string" ||
+      typeof email !== "string" ||
+      typeof password !== "string"
+    ) {
       return res.status(400).json({
-        message: "Please provide the staff member's first and last name",
+        message:
+          "First name, last name, email, password and role must be strings",
       });
     }
 
-    const firstName = nameParts[0];
-    const lastName = nameParts.slice(1).join(" ");
+    const normalizedFirstName = firstName.trim();
+    const normalizedLastName = lastName.trim();
+    const normalizedEmail = email.trim().toLowerCase();
+    const normalizedPassword = password.trim();
+    const allowedRoles = ["super-admin", "inventory-manager"];
 
-    const existingUser = await User.findOne({ email });
+    if (!normalizedFirstName || !normalizedLastName) {
+      return res.status(400).json({
+        message: "First name and last name cannot be empty",
+      });
+    }
 
+    if (!allowedRoles.includes(role)) {
+      return res.status(400).json({
+        message: "Role must be either 'super-admin' or 'inventory-manager'",
+      });
+    }
+
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(normalizedEmail)) {
+      return res.status(400).json({
+        message: "Please provide a valid email address",
+      });
+    }
+
+    if (normalizedPassword.length < 12 || normalizedPassword.length > 30) {
+      return res.status(400).json({
+        message: "Password must be between 12 and 30 characters long",
+      });
+    }
+
+    const passwordRegex =
+      /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@#$!%*?&_])[A-Za-z\d@#$!%*?&_]{12,30}$/;
+    if (!passwordRegex.test(normalizedPassword)) {
+      return res.status(400).json({
+        message:
+          "Password must contain at least one uppercase letter, one lowercase letter, one digit, and one special character (@$!%*?&).",
+      });
+    }
+
+    const existingUser = await User.findOne({ email: normalizedEmail });
     if (existingUser) {
       return res.status(409).json({
-        message: "A user with this email already exists",
+        message: "A user with this email or phone number already exists",
       });
     }
 
     const salt = await bcrypt.genSalt(10);
-    const hashedPassword = await bcrypt.hash(password, salt);
+    const hashedPassword = await bcrypt.hash(normalizedPassword, salt);
 
     const staff = new User({
-      firstName,
-      lastName,
-      email,
+      firstName: normalizedFirstName,
+      lastName: normalizedLastName,
+      email: normalizedEmail,
       password: hashedPassword,
-      role: "inventory-manager",
-      HasAdminAccess: false,
+      role,
+      HasAdminAccess: role === "super-admin",
+      mustChangePassword: true,
+      temporaryPasswordExpiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000),
     });
 
     await staff.save();
-    await sendStaffCredentials({ 
-      email,
-      name,
-      password,
-    });
+
+    try {
+      await emailService.sendStaffCredentials({
+        email: normalizedEmail,
+        name: `${normalizedFirstName} ${normalizedLastName}`.trim(),
+        password: normalizedPassword,
+        role,
+      });
+    } catch (emailError) {
+      console.error("Failed to send staff account email:", emailError.message);
+    }
 
     const staffResponse = staff.toObject();
     delete staffResponse.password;
 
     return res.status(201).json({
-      message: "Inventory manager created successfully",
+      message: `${role === "super-admin" ? "Super admin" : "Inventory manager"} created successfully`,
       staff: staffResponse,
     });
   } catch (error) {
@@ -450,6 +534,47 @@ exports.createStaff = async (req, res) => {
 
     return res.status(500).json({
       message: "Failed to create staff",
+      error: error.message,
     });
   }
 };
+
+exports.bootstrapSuperAdmin = async (req, res) =>
+  sendSecurityResponse(
+    res,
+    () =>
+      accountSecurity
+        .bootstrapSuperAdmin({
+          ...(req.body || {}),
+          bootstrapToken: req.get("x-bootstrap-token"),
+        })
+        .then((account) => {
+          const accountResponse = account.toObject();
+          delete accountResponse.password;
+          return {
+            message: "First Super Admin created successfully",
+            user: accountResponse,
+          };
+        }),
+    201,
+  );
+
+exports.changePassword = async (req, res) =>
+  sendSecurityResponse(res, () =>
+    accountSecurity.changePassword(req.body || {}),
+  );
+
+exports.requestPasswordReset = async (req, res) =>
+  sendSecurityResponse(res, () =>
+    accountSecurity.requestPasswordReset(req.body || {}),
+  );
+
+exports.verifyPasswordResetOtp = async (req, res) =>
+  sendSecurityResponse(res, () =>
+    accountSecurity.verifyPasswordResetOtp(req.body || {}),
+  );
+
+exports.resetPassword = async (req, res) =>
+  sendSecurityResponse(res, () =>
+    accountSecurity.resetPassword(req.body || {}),
+  );

@@ -1,0 +1,538 @@
+openapi: 3.0.3
+info:
+  title: nestleERP Backend API
+  version: 1.1.0
+  description: >-
+    API reference for nestleERP. Set the bootstrap token only in a local secret
+    store and send it in x-bootstrap-token for the one-time initial Super Admin
+    bootstrap. Password-reset OTPs and reset authorization expire after 10 minutes.
+servers:
+  - url: http://localhost:4001
+    description: Local backend
+tags:
+  - name: Health
+  - name: Authentication
+  - name: Password security
+  - name: Users
+  - name: Products
+paths:
+  /health:
+    get:
+      tags: [Health]
+      summary: Check backend health
+      responses:
+        "200":
+          description: Backend is running
+  /api/users/bootstrap/super-admin:
+    post:
+      tags: [Authentication]
+      summary: Create the first Super Admin (one time)
+      description: >-
+        Requires x-bootstrap-token matching SUPER_ADMIN_BOOTSTRAP_TOKEN. The
+        request is rejected if a Super Admin exists or bootstrap has already
+        been claimed. Do not include a role; this operation can only create a
+        Super Admin.
+      parameters:
+        - $ref: "#/components/parameters/BootstrapToken"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/BootstrapSuperAdminRequest"
+      responses:
+        "201":
+          description: First Super Admin created
+        "400":
+          description: Invalid account fields or password
+        "401":
+          description: Missing or invalid bootstrap token
+        "409":
+          description: Bootstrap already completed or in progress
+        "503":
+          description: Bootstrap token is not configured on the server
+  /api/users/login:
+    post:
+      tags: [Authentication]
+      summary: Sign in
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LoginRequest"
+      responses:
+        "200":
+          description: Login succeeded or a temporary password change is required
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: "#/components/schemas/LoginResponse"
+                  - $ref: "#/components/schemas/PasswordChangeRequiredResponse"
+        "400":
+          description: Missing or invalid request fields
+        "401":
+          description: Invalid password
+  /api/users/password/change:
+    post:
+      tags: [Password security]
+      summary: Change a current or temporary password
+      description: A valid current password is required. Temporary passwords expire after 24 hours.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ChangePasswordRequest"
+      responses:
+        "200":
+          description: Password changed
+        "400":
+          description: Password policy or confirmation validation failed
+        "401":
+          description: Current password is incorrect
+        "403":
+          description: Temporary password expired
+        "404":
+          description: Account not found
+  /api/users/password/forgot:
+    post:
+      tags: [Password security]
+      summary: Request a password reset OTP
+      description: Sends a six-digit OTP to the registered email address. OTP is valid for 10 minutes.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ForgotPasswordRequest"
+      responses:
+        "200":
+          description: OTP sent
+        "400":
+          description: Invalid email address
+        "404":
+          description: Email is not associated with a recognised user
+        "429":
+          description: Rate limited; wait before requesting another OTP
+        "503":
+          description: Email delivery is unavailable
+  /api/users/password/verify-otp:
+    post:
+      tags: [Password security]
+      summary: Verify a password reset OTP
+      description: OTP verification returns a short-lived, single-use reset token.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/VerifyOtpRequest"
+      responses:
+        "200":
+          description: OTP verified; reset authorization returned
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/VerifyOtpResponse"
+        "400":
+          description: Invalid, expired, or previously used OTP
+  /api/users/password/reset:
+    post:
+      tags: [Password security]
+      summary: Set a new password using reset authorization
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ResetPasswordRequest"
+      responses:
+        "200":
+          description: Password reset; authorization invalidated
+        "400":
+          description: Invalid or expired reset token or password validation failed
+  /api/users:
+    get:
+      tags: [Users]
+      summary: List users (Super Admin)
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Users returned
+        "401":
+          description: Authentication required
+        "403":
+          description: Super Admin role required
+    post:
+      tags: [Users]
+      summary: Register a normal user
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateUserRequest"
+      responses:
+        "201":
+          description: User created
+        "400":
+          description: Invalid or incomplete user data
+  /api/users/staff:
+    post:
+      tags: [Users]
+      summary: Create an inventory manager or additional Super Admin
+      description: Super Admin authentication required. New staff must change the emailed temporary password at first login; it expires after 24 hours.
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateStaffRequest"
+      responses:
+        "201":
+          description: Staff account created
+        "400":
+          description: Invalid staff data or password
+        "401":
+          description: Authentication required
+        "403":
+          description: Super Admin role required
+        "409":
+          description: Email already exists
+  /api/users/{id}:
+    parameters:
+      - $ref: "#/components/parameters/Id"
+    get:
+      tags: [Users]
+      summary: Get user by ID (Super Admin)
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: User returned
+        "401":
+          description: Authentication required
+        "403":
+          description: Super Admin role required
+        "404":
+          description: User not found
+    put:
+      tags: [Users]
+      summary: Update user (Super Admin)
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateUserRequest"
+      responses:
+        "200":
+          description: User updated
+        "400":
+          description: Invalid user data
+        "401":
+          description: Authentication required
+        "403":
+          description: Super Admin role required
+        "404":
+          description: User not found
+    delete:
+      tags: [Users]
+      summary: Delete user (Super Admin)
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: User deleted
+        "401":
+          description: Authentication required
+        "403":
+          description: Super Admin role required
+        "404":
+          description: User not found
+  /api/products:
+    get:
+      tags: [Products]
+      summary: List products
+      responses:
+        "200":
+          description: Product list returned
+        "404":
+          description: No products found
+    post:
+      tags: [Products]
+      summary: Create product (Inventory Manager or Super Admin)
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              $ref: "#/components/schemas/ProductInput"
+      responses:
+        "201":
+          description: Product created
+        "400":
+          description: Missing product data or image
+        "401":
+          description: Authentication required
+        "403":
+          description: Inventory Manager or Super Admin role required
+  /api/products/search:
+    get:
+      tags: [Products]
+      summary: Search and filter products
+      parameters:
+        - in: query
+          name: id
+          schema: { type: string }
+          description: Product ID
+        - in: query
+          name: name
+          schema: { type: string }
+        - in: query
+          name: q
+          schema: { type: string }
+          description: Alternate name search parameter
+        - in: query
+          name: category
+          schema: { type: string }
+        - in: query
+          name: size
+          schema: { type: string }
+        - in: query
+          name: price
+          schema: { type: number, minimum: 0 }
+        - in: query
+          name: minPrice
+          schema: { type: number, minimum: 0 }
+        - in: query
+          name: maxPrice
+          schema: { type: number, minimum: 0 }
+      responses:
+        "200":
+          description: Matching products returned
+        "400":
+          description: Invalid filter value
+        "404":
+          description: No matching products
+  /api/products/categories/{category}:
+    get:
+      tags: [Products]
+      summary: List products by category
+      parameters:
+        - in: path
+          name: category
+          required: true
+          schema: { type: string }
+      responses:
+        "200":
+          description: Matching products returned
+        "404":
+          description: No matching products
+  /api/products/{id}:
+    parameters:
+      - $ref: "#/components/parameters/Id"
+    get:
+      tags: [Products]
+      summary: Get product by ID
+      responses:
+        "200":
+          description: Product returned
+        "404":
+          description: Product not found
+    put:
+      tags: [Products]
+      summary: Update product (Inventory Manager or Super Admin)
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              $ref: "#/components/schemas/ProductUpdateInput"
+      responses:
+        "200":
+          description: Product updated
+        "401":
+          description: Authentication required
+        "403":
+          description: Inventory Manager or Super Admin role required
+        "404":
+          description: Product not found
+    delete:
+      tags: [Products]
+      summary: Delete product (Inventory Manager or Super Admin)
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Product deleted
+        "401":
+          description: Authentication required
+        "403":
+          description: Inventory Manager or Super Admin role required
+        "404":
+          description: Product not found
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  parameters:
+    BootstrapToken:
+      in: header
+      name: x-bootstrap-token
+      required: true
+      schema:
+        type: string
+      description: Value of SUPER_ADMIN_BOOTSTRAP_TOKEN from the server environment.
+    Id:
+      in: path
+      name: id
+      required: true
+      schema:
+        type: string
+  schemas:
+    BootstrapSuperAdminRequest:
+      type: object
+      required: [firstName, lastName, email, password]
+      properties:
+        firstName: { type: string }
+        lastName: { type: string }
+        email: { type: string, format: email }
+        password:
+          { type: string, format: password, minLength: 12, maxLength: 30 }
+    LoginRequest:
+      type: object
+      required: [email, password]
+      properties:
+        email: { type: string, format: email }
+        password: { type: string, format: password }
+    LoginResponse:
+      type: object
+      properties:
+        message: { type: string, example: Login successful }
+        token: { type: string }
+    PasswordChangeRequiredResponse:
+      type: object
+      properties:
+        message: { type: string }
+        passwordChangeRequired: { type: boolean, example: true }
+    ChangePasswordRequest:
+      type: object
+      required: [email, currentPassword, newPassword, confirmPassword]
+      properties:
+        email: { type: string, format: email }
+        currentPassword: { type: string, format: password }
+        newPassword:
+          { type: string, format: password, minLength: 12, maxLength: 30 }
+        confirmPassword: { type: string, format: password }
+    ForgotPasswordRequest:
+      type: object
+      required: [email]
+      properties:
+        email: { type: string, format: email }
+    VerifyOtpRequest:
+      type: object
+      required: [email, otp]
+      properties:
+        email: { type: string, format: email }
+        otp: { type: string, pattern: '^\d{6}$', example: "123456" }
+    VerifyOtpResponse:
+      type: object
+      properties:
+        message: { type: string }
+        resetToken: { type: string }
+        expiresInSeconds: { type: integer, example: 600 }
+    ResetPasswordRequest:
+      type: object
+      required: [resetToken, newPassword, confirmPassword]
+      properties:
+        resetToken: { type: string }
+        newPassword:
+          { type: string, format: password, minLength: 12, maxLength: 30 }
+        confirmPassword: { type: string, format: password }
+    CreateStaffRequest:
+      type: object
+      required: [firstName, lastName, email, password, role]
+      properties:
+        firstName: { type: string }
+        lastName: { type: string }
+        email: { type: string, format: email }
+        password:
+          { type: string, format: password, minLength: 12, maxLength: 30 }
+        role:
+          type: string
+          enum: [super-admin, inventory-manager]
+    CreateUserRequest:
+      type: object
+      required:
+        [
+          firstName,
+          lastName,
+          gender,
+          email,
+          password,
+          location,
+          phoneCountryCode,
+          phone,
+          address,
+        ]
+      properties:
+        firstName: { type: string }
+        lastName: { type: string }
+        gender: { type: string, enum: [Male, Female] }
+        email: { type: string, format: email }
+        password:
+          { type: string, format: password, minLength: 12, maxLength: 30 }
+        location: { type: string }
+        phoneCountryCode: { type: string, example: "+234" }
+        phone: { type: string }
+        address: { type: string }
+    UpdateUserRequest:
+      type: object
+      properties:
+        firstName: { type: string }
+        lastName: { type: string }
+        email: { type: string, format: email }
+        phoneCountryCode: { type: string }
+        phone: { type: string }
+        location: { type: string }
+        address: { type: string }
+    ProductInput:
+      type: object
+      required:
+        [name, description, category, price, size, quantity, color, image]
+      properties:
+        name: { type: string }
+        description: { type: string }
+        category: { type: string }
+        price: { type: number, minimum: 0 }
+        size: { type: string }
+        quantity: { type: integer, minimum: 0 }
+        status: { type: string }
+        color: { type: string }
+        image: { type: string, format: binary }
+    ProductUpdateInput:
+      type: object
+      properties:
+        name: { type: string }
+        description: { type: string }
+        category: { type: string }
+        price: { type: number, minimum: 0 }
+        size: { type: string }
+        quantity: { type: integer, minimum: 0 }
+        status: { type: string }
+        color: { type: string }
+        image: { type: string, format: binary }

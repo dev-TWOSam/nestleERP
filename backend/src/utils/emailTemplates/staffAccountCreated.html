@@ -1,409 +1,369 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
-<head>
-  <meta charset="UTF-8">
+  <head>
+    <meta charset="UTF-8" />
 
-  <meta
-    name="viewport"
-    content="width=device-width, initial-scale=1.0"
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+    <title>Account Created</title>
+  </head>
+
+  <body
+    style="
+      margin: 0;
+      padding: 0;
+      background-color: #f4f6f8;
+      font-family: Arial, Helvetica, sans-serif;
+      color: #222222;
+    "
   >
-
-  <title>Account Created</title>
-</head>
-
-<body
-  style="
-    margin: 0;
-    padding: 0;
-    background-color: #f4f6f8;
-    font-family: Arial, Helvetica, sans-serif;
-    color: #222222;
-  "
->
-
-  <table
-    width="100%"
-    cellpadding="0"
-    cellspacing="0"
-    border="0"
-    style="background-color: #f4f6f8; padding: 30px 15px;"
-  >
-
-    <tr>
-      <td align="center">
-
-        <table
-          width="100%"
-          cellpadding="0"
-          cellspacing="0"
-          border="0"
-          style="
-            max-width: 600px;
-            background-color: #ffffff;
-            border-radius: 10px;
-            overflow: hidden;
-            box-shadow: 0 4px 14px rgba(0,0,0,0.08);
-          "
-        >
-
-          <!-- HEADER -->
-          <tr>
-            <td
-              align="center"
-              style="
-                background-color: #ffffff;
-                padding: 30px 20px 20px;
-                border-bottom: 1px solid #eeeeee;
-              "
-            >
-
-              <img
-                src="https://res.cloudinary.com/xbezzyxi/image/upload/v1790303103/WhatsApp_Image_2026-09-24_at_6.19.18_PM.jpg"
-                alt="Company Logo"
+    <table
+      width="100%"
+      cellpadding="0"
+      cellspacing="0"
+      border="0"
+      style="background-color: #f4f6f8; padding: 30px 15px"
+    >
+      <tr>
+        <td align="center">
+          <table
+            width="100%"
+            cellpadding="0"
+            cellspacing="0"
+            border="0"
+            style="
+              max-width: 600px;
+              background-color: #ffffff;
+              border-radius: 10px;
+              overflow: hidden;
+              box-shadow: 0 4px 14px rgba(0, 0, 0, 0.08);
+            "
+          >
+            <!-- HEADER -->
+            <tr>
+              <td
+                align="center"
                 style="
-                  max-width: 150px;
-                  height: auto;
-                  display: block;
+                  background-color: #ffffff;
+                  padding: 30px 20px 20px;
+                  border-bottom: 1px solid #eeeeee;
                 "
               >
+                <img
+                  src="https://res.cloudinary.com/xbezzyxi/image/upload/v1790303103/WhatsApp_Image_2026-09-24_at_6.19.18_PM.jpg"
+                  alt="Company Logo"
+                  style="max-width: 150px; height: auto; display: block"
+                />
+              </td>
+            </tr>
 
-            </td>
-          </tr>
+            <!-- CONTENT -->
+            <tr>
+              <td style="padding: 35px 40px">
+                <h1
+                  style="
+                    margin: 0 0 20px;
+                    font-family: Arial, Helvetica, sans-serif;
+                    font-size: 28px;
+                    font-weight: 700;
+                    color: #222222;
+                  "
+                >
+                  Your account has been created
+                </h1>
 
-          <!-- CONTENT -->
-          <tr>
-            <td style="padding: 35px 40px;">
+                <p
+                  style="
+                    margin: 0 0 20px;
+                    font-size: 16px;
+                    line-height: 1.7;
+                    color: #555555;
+                  "
+                >
+                  Hello <strong>{{FULL_NAME}}</strong>,
+                </p>
 
-              <h1
-                style="
-                  margin: 0 0 20px;
-                  font-family: Arial, Helvetica, sans-serif;
-                  font-size: 28px;
-                  font-weight: 700;
-                  color: #222222;
-                "
-              >
-                Your account has been created
-              </h1>
+                <p
+                  style="
+                    margin: 0 0 25px;
+                    font-size: 16px;
+                    line-height: 1.7;
+                    color: #555555;
+                  "
+                >
+                  An account has been created for you on
+                  <strong>Nestlé ERP</strong>. You can use the login credentials
+                  below to access your account.
+                </p>
 
-              <p
-                style="
-                  margin: 0 0 20px;
-                  font-size: 16px;
-                  line-height: 1.7;
-                  color: #555555;
-                "
-              >
-                Hello <strong>{{FULL_NAME}}</strong>,
-              </p>
+                <!-- CREDENTIAL BOX -->
+                <table
+                  width="100%"
+                  cellpadding="0"
+                  cellspacing="0"
+                  border="0"
+                  style="
+                    background-color: #f8f9fa;
+                    border: 1px solid #e1e5e9;
+                    border-radius: 8px;
+                    margin-bottom: 30px;
+                  "
+                >
+                  <tr>
+                    <td style="padding: 25px">
+                      <p
+                        style="
+                          margin: 0 0 18px;
+                          font-size: 16px;
+                          font-weight: 700;
+                          color: #222222;
+                        "
+                      >
+                        Login Information
+                      </p>
 
-              <p
-                style="
-                  margin: 0 0 25px;
-                  font-size: 16px;
-                  line-height: 1.7;
-                  color: #555555;
-                "
-              >
-                An account has been created for you on
-                <strong>Nestlé ERP</strong>.
-                You can use the login credentials below to access your account.
-              </p>
+                      <table
+                        width="100%"
+                        cellpadding="0"
+                        cellspacing="0"
+                        border="0"
+                      >
+                        <tr>
+                          <td
+                            style="
+                              padding: 8px 0;
+                              font-size: 14px;
+                              color: #777777;
+                              width: 35%;
+                            "
+                          >
+                            Name
+                          </td>
 
-              <!-- CREDENTIAL BOX -->
-              <table
-                width="100%"
-                cellpadding="0"
-                cellspacing="0"
-                border="0"
+                          <td
+                            style="
+                              padding: 8px 0;
+                              font-size: 14px;
+                              color: #222222;
+                              font-weight: 600;
+                            "
+                          >
+                            {{FULL_NAME}}
+                          </td>
+                        </tr>
+
+                        <tr>
+                          <td
+                            style="
+                              padding: 8px 0;
+                              font-size: 14px;
+                              color: #777777;
+                            "
+                          >
+                            Email
+                          </td>
+
+                          <td
+                            style="
+                              padding: 8px 0;
+                              font-size: 14px;
+                              color: #222222;
+                              font-weight: 600;
+                            "
+                          >
+                            {{EMAIL}}
+                          </td>
+                        </tr>
+
+                        <tr>
+                          <td
+                            style="
+                              padding: 8px 0;
+                              font-size: 14px;
+                              color: #777777;
+                            "
+                          >
+                            Username
+                          </td>
+
+                          <td
+                            style="
+                              padding: 8px 0;
+                              font-size: 14px;
+                              color: #222222;
+                              font-weight: 600;
+                            "
+                          >
+                            {{USERNAME}}
+                          </td>
+                        </tr>
+
+                        <tr>
+                          <td
+                            style="
+                              padding: 8px 0;
+                              font-size: 14px;
+                              color: #777777;
+                            "
+                          >
+                            Temporary Password
+                          </td>
+
+                          <td
+                            style="
+                              padding: 8px 0;
+                              font-size: 14px;
+                              color: #222222;
+                              font-weight: 700;
+                            "
+                          >
+                            {{TEMPORARY_PASSWORD}}
+                          </td>
+                        </tr>
+
+                        <tr>
+                          <td
+                            style="
+                              padding: 8px 0;
+                              font-size: 14px;
+                              color: #777777;
+                            "
+                          >
+                            Role
+                          </td>
+
+                          <td
+                            style="
+                              padding: 8px 0;
+                              font-size: 14px;
+                              color: #222222;
+                              font-weight: 600;
+                            "
+                          >
+                            {{ROLE}}
+                          </td>
+                        </tr>
+                      </table>
+                    </td>
+                  </tr>
+                </table>
+
+                <p
+                  style="
+                    margin: 0 0 24px;
+                    font-size: 14px;
+                    line-height: 1.6;
+                    color: #555555;
+                  "
+                >
+                  This temporary password expires in 24 hours. Change it the
+                  first time you sign in.
+                </p>
+
+                <!-- LOGIN BUTTON -->
+                <table width="100%" cellpadding="0" cellspacing="0" border="0">
+                  <tr>
+                    <td align="center">
+                      <a
+                        href="{{LOGIN_URL}}"
+                        style="
+                          display: inline-block;
+                          padding: 14px 30px;
+                          background-color: #00843d;
+                          color: #ffffff;
+                          text-decoration: none;
+                          font-size: 16px;
+                          font-weight: 700;
+                          border-radius: 6px;
+                        "
+                      >
+                        Login to Your Account
+                      </a>
+                    </td>
+                  </tr>
+                </table>
+
+                <!-- SECURITY NOTICE -->
+                <table
+                  width="100%"
+                  cellpadding="0"
+                  cellspacing="0"
+                  border="0"
+                  style="
+                    margin-top: 30px;
+                    background-color: #fff8e6;
+                    border-left: 4px solid #f5a623;
+                  "
+                >
+                  <tr>
+                    <td style="padding: 16px 20px">
+                      <p
+                        style="
+                          margin: 0;
+                          font-size: 14px;
+                          line-height: 1.6;
+                          color: #665200;
+                        "
+                      >
+                        <strong>Security Notice:</strong>
+                        This password is temporary. For your security, you will
+                        be required to create a new password after your first
+                        login.
+                      </p>
+                    </td>
+                  </tr>
+                </table>
+
+                <p
+                  style="
+                    margin: 30px 0 0;
+                    font-size: 14px;
+                    line-height: 1.7;
+                    color: #777777;
+                  "
+                >
+                  If you did not expect this account or believe this email was
+                  sent to you by mistake, please contact your system
+                  administrator.
+                </p>
+
+                <p
+                  style="
+                    margin: 25px 0 0;
+                    font-size: 15px;
+                    line-height: 1.7;
+                    color: #555555;
+                  "
+                >
+                  Regards,<br />
+                  <strong>Nestlé ERP Team</strong>
+                </p>
+              </td>
+            </tr>
+
+            <!-- FOOTER -->
+            <tr>
+              <td
+                align="center"
                 style="
                   background-color: #f8f9fa;
-                  border: 1px solid #e1e5e9;
-                  border-radius: 8px;
-                  margin-bottom: 30px;
+                  padding: 25px;
+                  border-top: 1px solid #eeeeee;
                 "
               >
+                <p style="margin: 0 0 8px; font-size: 12px; color: #888888">
+                  This is an automated message. Please do not reply directly to
+                  this email.
+                </p>
 
-                <tr>
-                  <td style="padding: 25px;">
-
-                    <p
-                      style="
-                        margin: 0 0 18px;
-                        font-size: 16px;
-                        font-weight: 700;
-                        color: #222222;
-                      "
-                    >
-                      Login Information
-                    </p>
-
-                    <table
-                      width="100%"
-                      cellpadding="0"
-                      cellspacing="0"
-                      border="0"
-                    >
-
-                      <tr>
-                        <td
-                          style="
-                            padding: 8px 0;
-                            font-size: 14px;
-                            color: #777777;
-                            width: 35%;
-                          "
-                        >
-                          Name
-                        </td>
-
-                        <td
-                          style="
-                            padding: 8px 0;
-                            font-size: 14px;
-                            color: #222222;
-                            font-weight: 600;
-                          "
-                        >
-                          {{FULL_NAME}}
-                        </td>
-                      </tr>
-
-                      <tr>
-                        <td
-                          style="
-                            padding: 8px 0;
-                            font-size: 14px;
-                            color: #777777;
-                          "
-                        >
-                          Email
-                        </td>
-
-                        <td
-                          style="
-                            padding: 8px 0;
-                            font-size: 14px;
-                            color: #222222;
-                            font-weight: 600;
-                          "
-                        >
-                          {{EMAIL}}
-                        </td>
-                      </tr>
-
-                      <tr>
-                        <td
-                          style="
-                            padding: 8px 0;
-                            font-size: 14px;
-                            color: #777777;
-                          "
-                        >
-                          Username
-                        </td>
-
-                        <td
-                          style="
-                            padding: 8px 0;
-                            font-size: 14px;
-                            color: #222222;
-                            font-weight: 600;
-                          "
-                        >
-                          {{USERNAME}}
-                        </td>
-                      </tr>
-
-                      <tr>
-                        <td
-                          style="
-                            padding: 8px 0;
-                            font-size: 14px;
-                            color: #777777;
-                          "
-                        >
-                          Temporary Password
-                        </td>
-
-                        <td
-                          style="
-                            padding: 8px 0;
-                            font-size: 14px;
-                            color: #222222;
-                            font-weight: 700;
-                          "
-                        >
-                          {{TEMPORARY_PASSWORD}}
-                        </td>
-                      </tr>
-
-                      <tr>
-                        <td
-                          style="
-                            padding: 8px 0;
-                            font-size: 14px;
-                            color: #777777;
-                          "
-                        >
-                          Role
-                        </td>
-
-                        <td
-                          style="
-                            padding: 8px 0;
-                            font-size: 14px;
-                            color: #222222;
-                            font-weight: 600;
-                          "
-                        >
-                          {{ROLE}}
-                        </td>
-                      </tr>
-
-                    </table>
-
-                  </td>
-                </tr>
-
-              </table>
-
-              <!-- LOGIN BUTTON -->
-              <table
-                width="100%"
-                cellpadding="0"
-                cellspacing="0"
-                border="0"
-              >
-
-                <tr>
-                  <td align="center">
-
-                    <a
-                      href="{{LOGIN_URL}}"
-                      style="
-                        display: inline-block;
-                        padding: 14px 30px;
-                        background-color: #00843d;
-                        color: #ffffff;
-                        text-decoration: none;
-                        font-size: 16px;
-                        font-weight: 700;
-                        border-radius: 6px;
-                      "
-                    >
-                      Login to Your Account
-                    </a>
-
-                  </td>
-                </tr>
-
-              </table>
-
-              <!-- SECURITY NOTICE -->
-              <table
-                width="100%"
-                cellpadding="0"
-                cellspacing="0"
-                border="0"
-                style="
-                  margin-top: 30px;
-                  background-color: #fff8e6;
-                  border-left: 4px solid #f5a623;
-                "
-              >
-
-                <tr>
-                  <td style="padding: 16px 20px;">
-
-                    <p
-                      style="
-                        margin: 0;
-                        font-size: 14px;
-                        line-height: 1.6;
-                        color: #665200;
-                      "
-                    >
-                      <strong>Security Notice:</strong>
-                      This password is temporary. For your security,
-                      you will be required to create a new password
-                      after your first login.
-                    </p>
-
-                  </td>
-                </tr>
-
-              </table>
-
-              <p
-                style="
-                  margin: 30px 0 0;
-                  font-size: 14px;
-                  line-height: 1.7;
-                  color: #777777;
-                "
-              >
-                If you did not expect this account or believe this email
-                was sent to you by mistake, please contact your system
-                administrator.
-              </p>
-
-              <p
-                style="
-                  margin: 25px 0 0;
-                  font-size: 15px;
-                  line-height: 1.7;
-                  color: #555555;
-                "
-              >
-                Regards,<br>
-                <strong>Nestlé ERP Team</strong>
-              </p>
-
-            </td>
-          </tr>
-
-          <!-- FOOTER -->
-          <tr>
-            <td
-              align="center"
-              style="
-                background-color: #f8f9fa;
-                padding: 25px;
-                border-top: 1px solid #eeeeee;
-              "
-            >
-
-              <p
-                style="
-                  margin: 0 0 8px;
-                  font-size: 12px;
-                  color: #888888;
-                "
-              >
-                This is an automated message. Please do not reply directly
-                to this email.
-              </p>
-
-              <p
-                style="
-                  margin: 0;
-                  font-size: 12px;
-                  color: #aaaaaa;
-                "
-              >
-                ©️ {{CURRENT_YEAR}} Nestlé ERP System. All rights reserved.
-              </p>
-
-            </td>
-          </tr>
-
-        </table>
-
-      </td>
-    </tr>
-
-  </table>
-
-</body>
+                <p style="margin: 0; font-size: 12px; color: #aaaaaa">
+                  ©️ {{CURRENT_YEAR}} Nestlé ERP System. All rights reserved.
+                </p>
+              </td>
+            </tr>
+          </table>
+        </td>
+      </tr>
+    </table>
+  </body>
 </html>

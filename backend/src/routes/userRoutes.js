@@ -2,10 +2,23 @@ const express = require("express");
 
 const authenticate = require("../middleware/auth");
 const authorize = require("../middleware/authorize");
+const accountSecurityController = require("../controllers/accountSecurity");
 
 const router = express.Router();
 
 const userController = require("../controllers/users");
+
+router.post(
+  "/bootstrap/super-admin",
+  accountSecurityController.bootstrapSuperAdmin,
+);
+router.post("/password/change", accountSecurityController.changePassword);
+router.post("/password/forgot", accountSecurityController.requestPasswordReset);
+router.post(
+  "/password/verify-otp",
+  accountSecurityController.verifyPasswordResetOtp,
+);
+router.post("/password/reset", accountSecurityController.resetPassword);
 
 // Route to create a new user
 router.post("/", userController.createUser);
@@ -20,6 +33,15 @@ router.post(
 
 // Route to login a user
 router.post("/login", userController.login);
+
+// Initial Super Admin bootstrap; guarded by a configured one-time secret.
+router.post("/bootstrap/super-admin", userController.bootstrapSuperAdmin);
+
+// Password change and recovery routes
+router.post("/password/change", userController.changePassword);
+router.post("/password/forgot", userController.requestPasswordReset);
+router.post("/password/verify-otp", userController.verifyPasswordResetOtp);
+router.post("/password/reset", userController.resetPassword);
 
 // Route to get all users (accessible only by super-admin)
 router.get(
