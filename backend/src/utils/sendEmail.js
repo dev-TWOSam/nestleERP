@@ -26,11 +26,9 @@ const sendStaffCredentials = async ({
 
   let html = fs.readFileSync(templatePath, "utf8");
 
-  const loginUrl =
-    process.env.FRONTEND_URL || "http://localhost:3000";
+  const loginUrl = process.env.FRONTEND_URL || "http://localhost:3000";
 
-  const roleName =
-    role === "inventory-manager" ? "Inventory Manager" : role;
+  const roleName = role === "inventory-manager" ? "Inventory Manager" : role;
 
   html = html
     .replaceAll("{{FULL_NAME}}", name)
@@ -39,19 +37,26 @@ const sendStaffCredentials = async ({
     .replaceAll("{{TEMPORARY_PASSWORD}}", password)
     .replaceAll("{{ROLE}}", roleName)
     .replaceAll("{{LOGIN_URL}}", loginUrl)
-    .replaceAll(
-      "{{CURRENT_YEAR}}",
-      new Date().getFullYear().toString(),
-    );
+    .replaceAll("{{CURRENT_YEAR}}", new Date().getFullYear().toString());
 
   await transporter.sendMail({
     from: process.env.SMTP_USER,
     to: email,
-    subject:  "Your Nestlé ERP Staff Account",
+    subject: "Your Nestlé ERP Staff Account",
     html,
+  });
+};
+
+const sendPasswordResetOtp = async ({ email, otp }) => {
+  await transporter.sendMail({
+    from: process.env.SMTP_USER,
+    to: email,
+    subject: "Your Nestle ERP password reset code",
+    text: `Your password reset code is ${otp}. It expires in 10 minutes and can only be used once. If you did not request this code, you can ignore this email.`,
   });
 };
 
 module.exports = {
   sendStaffCredentials,
+  sendPasswordResetOtp,
 };

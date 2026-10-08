@@ -21,6 +21,15 @@ router.post(
 // Route to login a user
 router.post("/login", userController.login);
 
+// Initial Super Admin bootstrap; guarded by a configured one-time secret.
+router.post("/bootstrap/super-admin", userController.bootstrapSuperAdmin);
+
+// Password change and recovery routes
+router.post("/password/change", userController.changePassword);
+router.post("/password/forgot", userController.requestPasswordReset);
+router.post("/password/verify-otp", userController.verifyPasswordResetOtp);
+router.post("/password/reset", userController.resetPassword);
+
 // Route to get all users (accessible only by super-admin)
 router.get(
   "/",

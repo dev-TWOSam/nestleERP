@@ -1,0 +1,306 @@
+{
+  "info": {
+    "name": "nestleERP Backend API",
+    "description": "Local development collection. Set bootstrapToken from backend/.env before the one-time bootstrap request. Login and OTP verification scripts save authToken and resetToken automatically.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Health",
+      "item": [
+        {
+          "name": "Health check",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/health"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Users and authentication",
+      "item": [
+        {
+          "name": "Bootstrap first Super Admin (one time)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "x-bootstrap-token", "value": "{{bootstrapToken}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"firstName\": \"System\",\n  \"lastName\": \"Administrator\",\n  \"email\": \"admin@example.com\",\n  \"password\": \"StrongPass1!\"\n}"
+            },
+            "url": "{{baseUrl}}/api/users/bootstrap/super-admin",
+            "description": "Use only before a Super Admin exists. Copy SUPER_ADMIN_BOOTSTRAP_TOKEN from the ignored backend/.env into the collection variable."
+          }
+        },
+        {
+          "name": "Create normal user",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"firstName\": \"Ada\",\n  \"lastName\": \"Lovelace\",\n  \"gender\": \"Female\",\n  \"email\": \"ada@example.com\",\n  \"password\": \"StrongPass1!\",\n  \"location\": \"Lagos\",\n  \"phoneCountryCode\": \"+234\",\n  \"phone\": \"8012345678\",\n  \"address\": \"10 Main Road\"\n}"
+            },
+            "url": "{{baseUrl}}/api/users"
+          }
+        },
+        {
+          "name": "Login",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "  const body = pm.response.json();",
+                  "  if (body.token) pm.collectionVariables.set('authToken', body.token);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"admin@example.com\",\n  \"password\": \"StrongPass1!\"\n}"
+            },
+            "url": "{{baseUrl}}/api/users/login"
+          }
+        },
+        {
+          "name": "Create staff",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{authToken}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"firstName\": \"Grace\",\n  \"lastName\": \"Hopper\",\n  \"email\": \"grace@example.com\",\n  \"password\": \"TempPass1!XY\",\n  \"role\": \"inventory-manager\"\n}"
+            },
+            "url": "{{baseUrl}}/api/users/staff"
+          }
+        },
+        {
+          "name": "Change current or temporary password",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"grace@example.com\",\n  \"currentPassword\": \"TempPass1!XY\",\n  \"newPassword\": \"NewStrongPass2!\",\n  \"confirmPassword\": \"NewStrongPass2!\"\n}"
+            },
+            "url": "{{baseUrl}}/api/users/password/change"
+          }
+        },
+        {
+          "name": "Request password reset OTP",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"grace@example.com\"\n}"
+            },
+            "url": "{{baseUrl}}/api/users/password/forgot"
+          }
+        },
+        {
+          "name": "Verify password reset OTP",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "  const body = pm.response.json();",
+                  "  if (body.resetToken) pm.collectionVariables.set('resetToken', body.resetToken);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"grace@example.com\",\n  \"otp\": \"000000\"\n}"
+            },
+            "url": "{{baseUrl}}/api/users/password/verify-otp"
+          }
+        },
+        {
+          "name": "Set password with reset token",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"resetToken\": \"{{resetToken}}\",\n  \"newPassword\": \"NewStrongPass2!\",\n  \"confirmPassword\": \"NewStrongPass2!\"\n}"
+            },
+            "url": "{{baseUrl}}/api/users/password/reset"
+          }
+        },
+        {
+          "name": "List users (Super Admin)",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{authToken}}" }
+            ],
+            "url": "{{baseUrl}}/api/users"
+          }
+        },
+        {
+          "name": "Get user by ID (Super Admin)",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{authToken}}" }
+            ],
+            "url": "{{baseUrl}}/api/users/{{userId}}"
+          }
+        },
+        {
+          "name": "Update user (Super Admin)",
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{authToken}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"firstName\": \"Grace\",\n  \"lastName\": \"Hopper\",\n  \"email\": \"grace@example.com\"\n}"
+            },
+            "url": "{{baseUrl}}/api/users/{{userId}}"
+          }
+        },
+        {
+          "name": "Delete user (Super Admin)",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{authToken}}" }
+            ],
+            "url": "{{baseUrl}}/api/users/{{userId}}"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Products",
+      "item": [
+        {
+          "name": "List products",
+          "request": { "method": "GET", "url": "{{baseUrl}}/api/products" }
+        },
+        {
+          "name": "Search and filter products",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/products/search?name=watch&category=Electronics&minPrice=100&maxPrice=50000&size=42mm",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "products", "search"],
+              "query": [
+                { "key": "name", "value": "watch" },
+                { "key": "category", "value": "Electronics" },
+                { "key": "minPrice", "value": "100" },
+                { "key": "maxPrice", "value": "50000" },
+                { "key": "size", "value": "42mm" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Products by category",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/products/categories/Electronics"
+          }
+        },
+        {
+          "name": "Get product by ID",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/products/{{productId}}"
+          }
+        },
+        {
+          "name": "Create product (Inventory Manager or Super Admin)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{authToken}}" }
+            ],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                { "key": "name", "value": "Smart Watch", "type": "text" },
+                {
+                  "key": "description",
+                  "value": "Fitness tracking watch",
+                  "type": "text"
+                },
+                { "key": "category", "value": "Electronics", "type": "text" },
+                { "key": "price", "value": "25000", "type": "text" },
+                { "key": "size", "value": "42mm", "type": "text" },
+                { "key": "quantity", "value": "7", "type": "text" },
+                { "key": "color", "value": "Black", "type": "text" },
+                { "key": "status", "value": "In Stock", "type": "text" },
+                { "key": "image", "type": "file", "src": "" }
+              ]
+            },
+            "url": "{{baseUrl}}/api/products"
+          }
+        },
+        {
+          "name": "Update product (Inventory Manager or Super Admin)",
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{authToken}}" }
+            ],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                { "key": "name", "value": "Smart Watch Pro", "type": "text" },
+                { "key": "price", "value": "27500", "type": "text" }
+              ]
+            },
+            "url": "{{baseUrl}}/api/products/{{productId}}"
+          }
+        },
+        {
+          "name": "Delete product (Inventory Manager or Super Admin)",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{authToken}}" }
+            ],
+            "url": "{{baseUrl}}/api/products/{{productId}}"
+          }
+        }
+      ]
+    }
+  ],
+  "variable": [
+    { "key": "baseUrl", "value": "http://localhost:4001" },
+    { "key": "authToken", "value": "" },
+    { "key": "bootstrapToken", "value": "" },
+    { "key": "resetToken", "value": "" },
+    { "key": "userId", "value": "" },
+    { "key": "productId", "value": "" }
+  ]
+}
