@@ -11,7 +11,7 @@ This is the backend foundation for the nestleERP monorepo.
 
 ## Requirements
 
-- Node.js 18 or newer
+- Node.js 20 or newer
 
 ## Install dependencies
 
@@ -63,14 +63,21 @@ Copy the example file and update the values for your local environment:
 Copy-Item .env.example .env
 ```
 
-Example values:
+Required values include:
 
 ```env
-PORT=5000
-MONGO_URI=your_mongodb_connection_string
-JWT_SECRET=your_jwt_secret
-NODE_ENV=development
+PORT=4001
+MONGODB_URI=your_mongodb_connection_string
+JWT_SECRET=your_long_random_jwt_secret
+SUPER_ADMIN_BOOTSTRAP_SECRET=your_one_time_bootstrap_secret
+SMTP_HOST=your_smtp_host
+SMTP_PORT=587
+SMTP_USER=your_email
+SMTP_PASS=your_email_password
+FRONTEND_URL=http://localhost:3000
 ```
+
+Set a long random bootstrap secret before calling `POST /api/users/bootstrap/super-admin` with the `x-bootstrap-secret` header. Remove the secret from the environment after the first Super Admin is created; the database also permanently records that bootstrap has been used.
 
 ## Project structure
 

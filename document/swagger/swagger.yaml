@@ -1,0 +1,648 @@
+openapi: 3.0.3
+info:
+  title: nestleERP Backend API
+  description: API documentation for the nestleERP backend, including authentication, user management, password reset, and product management.
+  version: 1.0.0
+servers:
+  - url: http://localhost:5000
+    description: Local backend server
+security:
+  - bearerAuth: []
+paths:
+  /health:
+    get:
+      summary: Check backend health
+      tags:
+        - Health
+      responses:
+        "200":
+          description: Server is healthy
+          content:
+            application/json:
+              example:
+                status: OK
+                message: nestleERP backend is running
+                timestamp: "2026-10-07T00:00:00.000Z"
+
+  /api/users:
+    post:
+      summary: Create a new user
+      tags:
+        - Users
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateUserRequest"
+      responses:
+        "201":
+          description: User created successfully
+        "400":
+          description: Invalid request data
+        "500":
+          description: Server error
+    get:
+      summary: Get all users
+      tags:
+        - Users
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: List of users returned
+        "401":
+          description: Unauthorized
+        "403":
+          description: Forbidden
+
+  /api/users/login:
+    post:
+      summary: Login a user
+      tags:
+        - Users
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LoginRequest"
+      responses:
+        "200":
+          description: Login successful
+        "400":
+          description: Missing credentials
+        "404":
+          description: User not found
+
+  /api/users/staff:
+    post:
+      summary: Create a staff member
+      tags:
+        - Users
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateStaffRequest"
+      responses:
+        "201":
+          description: Staff created successfully
+        "401":
+          description: Unauthorized
+        "403":
+          description: Forbidden
+
+  /api/users/{id}:
+    get:
+      summary: Get a user by ID
+      tags:
+        - Users
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+          description: User ID
+      responses:
+        "200":
+          description: User detail returned
+        "404":
+          description: User not found
+    put:
+      summary: Update a user by ID
+      tags:
+        - Users
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+      responses:
+        "200":
+          description: User updated successfully
+        "404":
+          description: User not found
+    delete:
+      summary: Delete a user by ID
+      tags:
+        - Users
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: User deleted successfully
+
+  /api/users/bootstrap/super-admin:
+    post:
+      summary: Bootstrap the first super admin
+      tags:
+        - Users
+      parameters:
+        - in: header
+          name: x-bootstrap-secret
+          required: true
+          schema:
+            type: string
+          description: Bootstrap secret configured in environment
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/BootstrapSuperAdminRequest"
+      responses:
+        "201":
+          description: Super admin created successfully
+        "403":
+          description: Invalid bootstrap secret
+        "409":
+          description: Super admin already exists
+
+  /api/users/password/change:
+    post:
+      summary: Change password
+      tags:
+        - Account Security
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ChangePasswordRequest"
+      responses:
+        "200":
+          description: Password changed successfully
+        "400":
+          description: Invalid password data
+        "401":
+          description: Unauthorized
+
+  /api/users/password/forgot:
+    post:
+      summary: Request password reset OTP
+      tags:
+        - Account Security
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PasswordResetRequest"
+      responses:
+        "200":
+          description: Reset code sent
+        "400":
+          description: Invalid email
+        "404":
+          description: User not found
+
+  /api/users/password/verify-otp:
+    post:
+      summary: Verify password reset OTP
+      tags:
+        - Account Security
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/VerifyOtpRequest"
+      responses:
+        "200":
+          description: OTP verified successfully
+        "400":
+          description: Invalid or expired OTP
+
+  /api/users/password/reset:
+    post:
+      summary: Reset password using a verified token
+      tags:
+        - Account Security
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ResetPasswordRequest"
+      responses:
+        "200":
+          description: Password reset successfully
+        "400":
+          description: Invalid token or password data
+
+  /api/products:
+    get:
+      summary: Get all products
+      tags:
+        - Products
+      responses:
+        "200":
+          description: Products list returned
+    post:
+      summary: Create a new product
+      tags:
+        - Products
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              $ref: "#/components/schemas/CreateProductRequest"
+      responses:
+        "201":
+          description: Product created successfully
+        "400":
+          description: Missing required fields or image
+        "401":
+          description: Unauthorized
+        "403":
+          description: Forbidden
+
+  /api/products/categories/{category}:
+    get:
+      summary: Get products by category
+      tags:
+        - Products
+      parameters:
+        - in: path
+          name: category
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Category products returned
+        "404":
+          description: No products found
+
+  /api/products/{id}:
+    get:
+      summary: Get product by ID
+      tags:
+        - Products
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Product returned
+        "404":
+          description: Product not found
+    put:
+      summary: Update a product by ID
+      tags:
+        - Products
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              $ref: "#/components/schemas/UpdateProductRequest"
+      responses:
+        "200":
+          description: Product updated successfully
+        "404":
+          description: Product not found
+    delete:
+      summary: Delete a product by ID
+      tags:
+        - Products
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Product deleted successfully
+        "404":
+          description: Product not found
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  schemas:
+    CreateUserRequest:
+      type: object
+      required:
+        - firstName
+        - lastName
+        - gender
+        - email
+        - password
+        - location
+        - phoneCountryCode
+        - phone
+        - address
+      properties:
+        firstName:
+          type: string
+          example: Jane
+        lastName:
+          type: string
+          example: Smith
+        gender:
+          type: string
+          example: Female
+        email:
+          type: string
+          format: email
+          example: jane@example.com
+        password:
+          type: string
+          format: password
+          example: StrongPass1!
+        location:
+          type: string
+          example: Lagos
+        phoneCountryCode:
+          type: string
+          example: "+234"
+        phone:
+          type: string
+          example: "8012345678"
+        address:
+          type: string
+          example: 14 Unity Avenue
+
+    LoginRequest:
+      type: object
+      required:
+        - email
+        - password
+      properties:
+        email:
+          type: string
+          example: admin@example.com
+        password:
+          type: string
+          format: password
+          example: StrongPass1!
+
+    CreateStaffRequest:
+      type: object
+      required:
+        - firstName
+        - lastName
+        - email
+        - password
+        - gender
+        - location
+        - phoneCountryCode
+        - phone
+        - address
+      properties:
+        firstName:
+          type: string
+          example: Grace
+        lastName:
+          type: string
+          example: Jones
+        email:
+          type: string
+          example: grace@example.com
+        password:
+          type: string
+          format: password
+          example: StrongPass1!
+        gender:
+          type: string
+          example: Female
+        location:
+          type: string
+          example: Kaduna
+        phoneCountryCode:
+          type: string
+          example: "+234"
+        phone:
+          type: string
+          example: "8123456789"
+        address:
+          type: string
+          example: 44 Staff Road
+
+    BootstrapSuperAdminRequest:
+      type: object
+      required:
+        - firstName
+        - lastName
+        - email
+        - password
+        - gender
+        - location
+        - phoneCountryCode
+        - phone
+        - address
+      properties:
+        firstName:
+          type: string
+          example: John
+        lastName:
+          type: string
+          example: Doe
+        email:
+          type: string
+          example: admin@example.com
+        password:
+          type: string
+          format: password
+          example: StrongPass1!
+        gender:
+          type: string
+          example: Male
+        location:
+          type: string
+          example: Lagos
+        phoneCountryCode:
+          type: string
+          example: "+234"
+        phone:
+          type: string
+          example: "8012345678"
+        address:
+          type: string
+          example: 12 Main Street
+
+    ChangePasswordRequest:
+      type: object
+      required:
+        - email
+        - currentPassword
+        - newPassword
+        - confirmPassword
+      properties:
+        email:
+          type: string
+          example: admin@example.com
+        currentPassword:
+          type: string
+          format: password
+          example: StrongPass1!
+        newPassword:
+          type: string
+          format: password
+          example: NewStrongPass1!
+        confirmPassword:
+          type: string
+          format: password
+          example: NewStrongPass1!
+
+    PasswordResetRequest:
+      type: object
+      required:
+        - email
+      properties:
+        email:
+          type: string
+          example: admin@example.com
+
+    VerifyOtpRequest:
+      type: object
+      required:
+        - email
+        - otp
+      properties:
+        email:
+          type: string
+          example: admin@example.com
+        otp:
+          type: string
+          example: "123456"
+
+    ResetPasswordRequest:
+      type: object
+      required:
+        - email
+        - resetToken
+        - newPassword
+        - confirmPassword
+      properties:
+        email:
+          type: string
+          example: admin@example.com
+        resetToken:
+          type: string
+          example: reset-token-value
+        newPassword:
+          type: string
+          format: password
+          example: NewStrongPass1!
+        confirmPassword:
+          type: string
+          format: password
+          example: NewStrongPass1!
+
+    CreateProductRequest:
+      type: object
+      required:
+        - name
+        - description
+        - category
+        - price
+        - size
+        - quantity
+        - color
+        - image
+      properties:
+        name:
+          type: string
+          example: Smart Watch
+        description:
+          type: string
+          example: Digital watch with health tracking
+        category:
+          type: string
+          example: Electronics
+        price:
+          type: number
+          example: 25000
+        size:
+          type: string
+          example: 42mm
+        quantity:
+          type: integer
+          example: 20
+        status:
+          type: string
+          example: In Stock
+        color:
+          type: string
+          example: Black
+        image:
+          type: string
+          format: binary
+
+    UpdateProductRequest:
+      type: object
+      properties:
+        name:
+          type: string
+          example: Smart Watch Pro
+        description:
+          type: string
+          example: Updated description
+        category:
+          type: string
+          example: Electronics
+        price:
+          type: number
+          example: 30000
+        size:
+          type: string
+          example: 44mm
+        quantity:
+          type: integer
+          example: 10
+        status:
+          type: string
+          example: In Stock
+        color:
+          type: string
+          example: Silver
+        image:
+          type: string
+          format: binary
