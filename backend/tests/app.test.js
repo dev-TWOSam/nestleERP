@@ -1,4 +1,5 @@
 const request = require("supertest");
+const bcrypt = require("bcrypt");
 const app = require("../app");
 const Product = require("../src/models/products");
 const User = require("../src/models/users");
@@ -20,7 +21,7 @@ describe("updated staff creation and product search requirements", () => {
     jest.restoreAllMocks();
   });
 
-  test("createStaff accepts only the required staff fields and generates a secure password", async () => {
+  test("createStaff accepts the supplied password and does not auto-generate one", async () => {
     const saveMock = jest.fn().mockResolvedValue({
       _id: "staff-id",
       firstName: "Ada",
@@ -37,6 +38,8 @@ describe("updated staff creation and product search requirements", () => {
       }),
     });
 
+    const hashSpy = jest.spyOn(bcrypt, "genSalt").mockResolvedValue("salt");
+    jest.spyOn(bcrypt, "hash").mockResolvedValue("hashed-password");
     jest.spyOn(User, "findOne").mockResolvedValue(null);
     jest.spyOn(User.prototype, "save").mockImplementation(saveMock);
     jest
@@ -49,6 +52,7 @@ describe("updated staff creation and product search requirements", () => {
         lastName: "Lovelace",
         role: "inventory-manager",
         email: "ada@example.com",
+        password: "StrongPass1!",
       },
     };
     const res = {
@@ -59,11 +63,40 @@ describe("updated staff creation and product search requirements", () => {
     await userController.createStaff(req, res);
 
     expect(res.status).toHaveBeenCalledWith(201);
-    expect(User.findOne).toHaveBeenCalledWith({ email: "ada@example.com" });
+    expect(hashSpy).toHaveBeenCalled();
+    expect(bcrypt.hash).toHaveBeenCalledWith("StrongPass1!", "salt");
     expect(saveMock).toHaveBeenCalled();
+    expect(saveMock.mock.instances[0].mustChangePassword).toBe(true);
+    expect(
+      saveMock.mock.instances[0].temporaryPasswordExpiresAt,
+    ).toBeInstanceOf(Date);
   });
 
-  test("searchProducts supports name, id and category/price/size filters", async () => {
+  test("login with a temporary password requires a change and returns no token", async () => {
+    jest.spyOn(User, "findOne").mockResolvedValue({
+      password: "hashed-temporary-password",
+      mustChangePassword: true,
+      temporaryPasswordExpiresAt: new Date(Date.now() + 60_000),
+    });
+    jest.spyOn(bcrypt, "compare").mockResolvedValue(true);
+    const res = {
+      status: jest.fn().mockReturnThis(),
+      json: jest.fn(),
+    };
+
+    await userController.login(
+      { body: { email: "staff@example.com", password: "TemporaryPass1!" } },
+      res,
+    );
+
+    expect(res.status).toHaveBeenCalledWith(200);
+    expect(res.json.mock.calls[0][0]).toMatchObject({
+      passwordChangeRequired: true,
+    });
+    expect(res.json.mock.calls[0][0]).not.toHaveProperty("token");
+  });
+
+  test("searchProducts supports name, id and category/price/size filters with strict validation", async () => {
     const products = [
       {
         _id: "product-1",
@@ -93,7 +126,7 @@ describe("updated staff creation and product search requirements", () => {
       sort: jest.fn().mockResolvedValue(products),
     });
 
-    const req = {
+    const validReq = {
       query: {
         name: "Smart",
         category: "Electronics",
@@ -101,18 +134,24 @@ describe("updated staff creation and product search requirements", () => {
         size: "42mm",
       },
     };
-    const res = {
+    const validRes = {
       status: jest.fn().mockReturnThis(),
       json: jest.fn(),
     };
 
-    await productController.searchProducts(req, res);
+    await productController.searchProducts(validReq, validRes);
 
-    expect(res.status).toHaveBeenCalledWith(200);
-    const payload = res.json.mock.calls[0][0];
+    expect(validRes.status).toHaveBeenCalledWith(200);
+    const payload = validRes.json.mock.calls[0][0];
     expect(
       payload.products.some((product) => product.name === "Smart Watch"),
     ).toBe(true);
+
+    const invalidReq = { query: { price: "not-a-number" } };
+    const invalidRes = { status: jest.fn().mockReturnThis(), json: jest.fn() };
+    await productController.searchProducts(invalidReq, invalidRes);
+
+    expect(invalidRes.status).toHaveBeenCalledWith(400);
 
     const byIdReq = { query: { id: "product-1" } };
     const byIdRes = { status: jest.fn().mockReturnThis(), json: jest.fn() };

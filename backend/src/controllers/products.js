@@ -61,41 +61,73 @@ const buildProductFilter = (query = {}) => {
   const filter = {};
   const { id, name, q, category, price, minPrice, maxPrice, size } = query;
 
-  if (id) {
-    filter._id = id;
+  if (id !== undefined && id !== null && id !== "") {
+    const normalizedId = String(id).trim();
+    if (!normalizedId) {
+      throw new Error("Product id cannot be empty");
+    }
+    filter._id = normalizedId;
   }
 
   if (name || q) {
     const searchValue = (name || q || "").trim();
-    if (searchValue) {
-      filter.name = { $regex: searchValue, $options: "i" };
+    if (!searchValue) {
+      throw new Error("Product name search value cannot be empty");
     }
+    filter.name = { $regex: searchValue, $options: "i" };
   }
 
-  if (category) {
-    filter.category = { $regex: category, $options: "i" };
+  if (category !== undefined && category !== null && category !== "") {
+    const normalizedCategory = String(category).trim();
+    if (!normalizedCategory) {
+      throw new Error("Category filter cannot be empty");
+    }
+    filter.category = { $regex: normalizedCategory, $options: "i" };
   }
 
-  if (size) {
-    filter.size = { $regex: size, $options: "i" };
+  if (size !== undefined && size !== null && size !== "") {
+    const normalizedSize = String(size).trim();
+    if (!normalizedSize) {
+      throw new Error("Size filter cannot be empty");
+    }
+    filter.size = { $regex: normalizedSize, $options: "i" };
   }
 
-  if (price !== undefined && price !== "") {
-    filter.price = Number(price);
+  const parseAmount = (rawValue, fieldName) => {
+    if (rawValue === undefined || rawValue === null || rawValue === "") {
+      return null;
+    }
+
+    const parsed = Number(rawValue);
+    if (!Number.isFinite(parsed) || parsed < 0) {
+      throw new Error(`${fieldName} must be a valid non-negative number`);
+    }
+
+    return parsed;
+  };
+
+  const parsedPrice = parseAmount(price, "Price");
+  const parsedMinPrice = parseAmount(minPrice, "Minimum price");
+  const parsedMaxPrice = parseAmount(maxPrice, "Maximum price");
+
+  if (parsedPrice !== null) {
+    filter.price = parsedPrice;
   }
 
-  if (minPrice !== undefined && minPrice !== "") {
+  if (parsedMinPrice !== null || parsedMaxPrice !== null) {
     filter.price = {
-      ...(filter.price || {}),
-      $gte: Number(minPrice),
+      ...(filter.price && typeof filter.price === "object" ? filter.price : {}),
+      ...(parsedMinPrice !== null ? { $gte: parsedMinPrice } : {}),
+      ...(parsedMaxPrice !== null ? { $lte: parsedMaxPrice } : {}),
     };
   }
 
-  if (maxPrice !== undefined && maxPrice !== "") {
-    filter.price = {
-      ...(filter.price || {}),
-      $lte: Number(maxPrice),
-    };
+  if (
+    parsedMinPrice !== null &&
+    parsedMaxPrice !== null &&
+    parsedMinPrice > parsedMaxPrice
+  ) {
+    throw new Error("Minimum price cannot be greater than maximum price");
   }
 
   return filter;
@@ -113,6 +145,14 @@ exports.getAllProducts = async (req, res) => {
     return res.status(200).json({ products });
   } catch (error) {
     console.error("Error fetching products:", error);
+
+    if (
+      error.message.includes("Invalid") ||
+      error.message.includes("must be")
+    ) {
+      return res.status(400).json({ message: error.message });
+    }
+
     return res
       .status(500)
       .json({ message: "Error retrieving products", error: error.message });
@@ -133,6 +173,15 @@ exports.searchProducts = async (req, res) => {
     return res.status(200).json({ count: products.length, products });
   } catch (error) {
     console.error("Error searching products:", error);
+
+    if (
+      error.message.includes("Invalid") ||
+      error.message.includes("must be") ||
+      error.message.includes("cannot be")
+    ) {
+      return res.status(400).json({ message: error.message });
+    }
+
     return res.status(500).json({
       message: "Error searching products",
       error: error.message,

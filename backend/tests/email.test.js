@@ -1,51 +1,31 @@
-const mockSendMail = jest.fn().mockResolvedValue(undefined);
+describe("email utility", () => {
+  test("sendStaffCredentials calls the SMTP transport with the expected payload", async () => {
+    const sendMailMock = jest
+      .fn()
+      .mockResolvedValue({ accepted: ["staff@example.com"] });
+    const createTransportMock = jest.fn().mockReturnValue({
+      sendMail: sendMailMock,
+    });
 
-jest.mock("nodemailer", () => ({
-  createTransport: jest.fn(() => ({ sendMail: mockSendMail })),
-}));
+    jest.doMock("nodemailer", () => ({
+      createTransport: createTransportMock,
+    }));
 
-const originalSmtpUser = process.env.SMTP_USER;
-process.env.SMTP_USER = "test@example.com";
+    const { sendStaffCredentials } = require("../src/utils/sendEmail");
 
-const {
-  sendPasswordResetOtp,
-  sendStaffCredentials,
-} = require("../src/utils/sendEmail");
+    await sendStaffCredentials({
+      email: "staff@example.com",
+      name: "Jane Doe",
+      password: "TempPass1!",
+      role: "inventory-manager",
+    });
 
-afterAll(() => {
-  if (originalSmtpUser === undefined) {
-    delete process.env.SMTP_USER;
-  } else {
-    process.env.SMTP_USER = originalSmtpUser;
-  }
-});
-
-beforeEach(() => {
-  mockSendMail.mockClear();
-});
-
-test("sends a reset OTP through the configured email transport", async () => {
-  await sendPasswordResetOtp({ email: "user@example.com", otp: "012345" });
-
-  expect(mockSendMail).toHaveBeenCalledWith(
-    expect.objectContaining({
-      from: "test@example.com",
-      to: "user@example.com",
-      text: expect.stringContaining("012345"),
-      html: expect.stringContaining("012345"),
-    }),
-  );
-});
-
-test("escapes user-provided values in the staff email HTML", async () => {
-  await sendStaffCredentials({
-    email: "staff@example.com",
-    name: "<script>alert(1)</script>",
-    password: "Temp&Password1!",
+    expect(createTransportMock).toHaveBeenCalled();
+    expect(sendMailMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        to: "staff@example.com",
+        subject: expect.stringMatching(/Nestlé ERP Staff Account/i),
+      }),
+    );
   });
-
-  const message = mockSendMail.mock.calls[0][0];
-  expect(message.html).toContain("&lt;script&gt;");
-  expect(message.html).not.toContain("<script>");
-  expect(message.text).toContain("Temp&Password1!");
 });

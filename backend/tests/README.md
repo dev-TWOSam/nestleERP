@@ -1,16 +1,21 @@
-# Backend Tests
+# Backend Test Suite
 
-Run the route and unit tests from the repository root with `npm test` (or from `backend` with `npm test`).
+This folder contains the core backend checks for the project.
 
-`critical-behavior.test.js` checks product responses, login behavior, authorization, expired tokens, and invalid registration/product requests. These tests mock database methods.
+- `app.test.js`: app boot and critical route checks
+- `critical-behavior.test.js`: validation of key API behaviors
+- `account-security.test.js`: first-login password change, Super Admin bootstrap, and password reset security
+- `database-integration.test.js`: Mongo-backed integration tests when `MONGODB_TEST_URI` is set
+- `email.test.js`: SMTP email delivery check for staff account emails
 
-`database-integration.test.js` checks user/product persistence, staff first-login password changes, one-time Super Admin bootstrap, and OTP password resets for each role against MongoDB. Email delivery is mocked. Start a local MongoDB instance, then set a test-only URI before running the suite:
+Run all tests with:
 
-```powershell
-$env:MONGODB_TEST_URI = "mongodb://127.0.0.1:27017/nestleERP_test"
+```bash
 npm test
 ```
 
-The database name must contain `test`. These tests clear the `Product` and `User` collections after each case. Without `MONGODB_TEST_URI`, only the database integration tests are skipped; the other tests still run.
+Use a dedicated MongoDB test database URI for DB integration tests:
 
-Use a disposable test database only. Tests clear the `User`, `Product`, and bootstrap-state collections. The integration setup also clears these collections before the first test run.
+```bash
+MONGODB_TEST_URI=mongodb://127.0.0.1:27017/nestleERP_test npm test
+```

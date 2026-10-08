@@ -4,16 +4,18 @@ const bootstrapStateSchema = new mongoose.Schema(
   {
     _id: {
       type: String,
-      required: true,
+      default: "first-super-admin",
     },
-    completedAt: {
+    completed: {
+      type: Boolean,
+      default: false,
+    },
+    lockExpiresAt: {
       type: Date,
       default: null,
     },
   },
-  {
-    versionKey: false,
-  },
+  { timestamps: true },
 );
 
 module.exports = mongoose.model("BootstrapState", bootstrapStateSchema);
