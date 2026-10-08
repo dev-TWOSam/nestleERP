@@ -18,6 +18,8 @@ const userSchema = new mongoose.Schema(
     email: {
       type: String,
       required: [true, "Please enter your email"],
+      trim: true,
+      lowercase: true,
       unique: true,
     },
     password: {
@@ -83,6 +85,39 @@ const userSchema = new mongoose.Schema(
       enum: ["user", "inventory-manager", "super-admin"],
       default: "user",
       required: true,
+    },
+    mustChangePassword: {
+      type: Boolean,
+      default: false,
+    },
+    temporaryPasswordExpiresAt: {
+      type: Date,
+      default: null,
+    },
+    passwordResetOtpHash: {
+      type: String,
+      select: false,
+    },
+    passwordResetOtpExpiresAt: {
+      type: Date,
+      select: false,
+    },
+    passwordResetOtpAttempts: {
+      type: Number,
+      default: 0,
+      select: false,
+    },
+    passwordResetRequestedAt: {
+      type: Date,
+      select: false,
+    },
+    passwordResetTokenHash: {
+      type: String,
+      select: false,
+    },
+    passwordResetTokenExpiresAt: {
+      type: Date,
+      select: false,
     },
   },
   {

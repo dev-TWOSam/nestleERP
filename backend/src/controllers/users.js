@@ -50,15 +50,16 @@ exports.createUser = async (req, res) => {
       });
     }
 
+    const email = normalizeEmail(req.body.email);
+
     // Validate the name field to ensure it only contains letters, spaces, hyphens, and apostrophes, and is between 2 and 50 characters long
-    const nameRegex = /^[a-zA-Z\s\-']{2,50}$/;
-    if (!nameRegex.test(req.body.firstName.trim())) {
+    if (!isValidName(req.body.firstName)) {
       return res.status(400).json({
         message:
           "First name must be between 2 and 50 characters and can only contain letters, spaces, hyphens, and apostrophes",
       });
     }
-    if (!nameRegex.test(req.body.lastName.trim())) {
+    if (!isValidName(req.body.lastName)) {
       return res.status(400).json({
         message:
           "Last name must be between 2 and 50 characters and can only contain letters, spaces, hyphens, and apostrophes",
@@ -66,8 +67,7 @@ exports.createUser = async (req, res) => {
     }
 
     // Validate the email format using a regular expression
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(req.body.email)) {
+    if (!isValidEmail(email)) {
       return res.status(400).json({
         message:
           "Please provide a valid email address (e.g., example@domain.com).",
@@ -80,10 +80,7 @@ exports.createUser = async (req, res) => {
       });
     }
 
-    // Validate the password to ensure it contains at least one uppercase letter, one lowercase letter, one digit, and one special character
-    const passwordRegex =
-      /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@#$!%*?&_])[A-Za-z\d@#$!%*?&_]{12,30}$/;
-    if (!passwordRegex.test(req.body.password)) {
+    if (!isValidPassword(req.body.password)) {
       return res.status(400).json({
         message:
           "Password must contain at least one uppercase letter, one lowercase letter, one digit, and one special character (@$!%*?&).",
@@ -107,11 +104,11 @@ exports.createUser = async (req, res) => {
 
     // Check if the email or phone number already exists in the database
     const existingUser = await User.findOne({
-      $or: [{ email: req.body.email }, { phone: fullPhoneNumber }],
+      $or: [{ email }, { phone: fullPhoneNumber }],
     });
     // If an existing user is found, check which field is duplicated and return an appropriate message
     if (existingUser) {
-      if (existingUser.email === req.body.email) {
+      if (existingUser.email === email) {
         return res.status(400).json({ message: "Email already exists" });
       }
       if (existingUser.phone === fullPhoneNumber) {
@@ -127,7 +124,7 @@ exports.createUser = async (req, res) => {
     const user = new User({
       firstName: req.body.firstName,
       lastName: req.body.lastName,
-      email: req.body.email,
+      email,
       phone: fullPhoneNumber, // Use the full phone number with country code
       password: hashedPassword,
       gender: req.body.gender,
@@ -426,6 +423,8 @@ exports.deleteUserById = async (req, res) => {
       .json({ message: "Error deleting user", error: error.message });
   }
 };
+
+// Create-staff endpoint
 exports.createStaff = async (req, res) => {
   try {
     const { firstName, lastName, role, email, password } = req.body;
@@ -492,7 +491,7 @@ exports.createStaff = async (req, res) => {
     const existingUser = await User.findOne({ email: normalizedEmail });
     if (existingUser) {
       return res.status(409).json({
-        message: "A user with this email already exists",
+        message: "A user with this email or phone number already exists",
       });
     }
 

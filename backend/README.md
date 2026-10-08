@@ -11,7 +11,7 @@ This is the backend foundation for the nestleERP monorepo.
 
 ## Requirements
 
-- Node.js 18 or newer
+- Node.js 20 or newer
 
 ## Install dependencies
 
@@ -63,7 +63,7 @@ Copy the example file and update the values for your local environment:
 Copy-Item .env.example .env
 ```
 
-Example values:
+Required values include:
 
 ```env
 PORT=5000
