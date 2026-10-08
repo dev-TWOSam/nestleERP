@@ -14,7 +14,6 @@ const userSchema = new mongoose.Schema(
     gender: {
       type: String,
       enum: ["Male", "Female"],
-      required: [true, "Please select your gender"],
     },
     email: {
       type: String,
@@ -30,16 +29,14 @@ const userSchema = new mongoose.Schema(
     location: {
       type: String,
       enum: nigeriaStates,
-      required: [true, "Please enter your location"],
     },
     phone: {
       type: String,
-      required: [true, "Please enter your phone number"],
       unique: true,
+      sparse: true,
     },
     address: {
       type: String,
-      required: [true, "Please enter your address"],
     },
     HasAdminAccess: {
       type: Boolean,
