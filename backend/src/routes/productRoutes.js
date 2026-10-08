@@ -15,6 +15,9 @@ router.get("/", productController.getAllProducts);
 // Route to get products by category
 router.get("/categories/:category", productController.getProductsByCategory);
 
+// Route to search products by name, id and filter by category, price, and size
+router.get("/search", productController.searchProducts);
+
 // Route to get products by ID
 router.get("/:id", productController.getProductById);
 

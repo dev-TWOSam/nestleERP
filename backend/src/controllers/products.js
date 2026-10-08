@@ -57,10 +57,55 @@ exports.createProduct = async (req, res) => {
   }
 };
 
+const buildProductFilter = (query = {}) => {
+  const filter = {};
+  const { id, name, q, category, price, minPrice, maxPrice, size } = query;
+
+  if (id) {
+    filter._id = id;
+  }
+
+  if (name || q) {
+    const searchValue = (name || q || "").trim();
+    if (searchValue) {
+      filter.name = { $regex: searchValue, $options: "i" };
+    }
+  }
+
+  if (category) {
+    filter.category = { $regex: category, $options: "i" };
+  }
+
+  if (size) {
+    filter.size = { $regex: size, $options: "i" };
+  }
+
+  if (price !== undefined && price !== "") {
+    filter.price = Number(price);
+  }
+
+  if (minPrice !== undefined && minPrice !== "") {
+    filter.price = {
+      ...(filter.price || {}),
+      $gte: Number(minPrice),
+    };
+  }
+
+  if (maxPrice !== undefined && maxPrice !== "") {
+    filter.price = {
+      ...(filter.price || {}),
+      $lte: Number(maxPrice),
+    };
+  }
+
+  return filter;
+};
+
 //Get-all-products endpoint
 exports.getAllProducts = async (req, res) => {
   try {
-    const products = await Product.find();
+    const filter = buildProductFilter(req.query);
+    const products = await Product.find(filter);
 
     if (!products || products.length === 0)
       return res.status(404).json({ message: "No product exist in the store" });
@@ -71,6 +116,27 @@ exports.getAllProducts = async (req, res) => {
     return res
       .status(500)
       .json({ message: "Error retrieving products", error: error.message });
+  }
+};
+
+exports.searchProducts = async (req, res) => {
+  try {
+    const filter = buildProductFilter(req.query);
+    const products = await Product.find(filter).sort({ createdAt: -1 });
+
+    if (!products || products.length === 0) {
+      return res.status(404).json({
+        message: "No products found matching the provided search criteria",
+      });
+    }
+
+    return res.status(200).json({ count: products.length, products });
+  } catch (error) {
+    console.error("Error searching products:", error);
+    return res.status(500).json({
+      message: "Error searching products",
+      error: error.message,
+    });
   }
 };
 

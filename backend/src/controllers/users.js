@@ -392,57 +392,89 @@ exports.deleteUserById = async (req, res) => {
 };
 exports.createStaff = async (req, res) => {
   try {
-    const { name, email, password } = req.body;
+    const { firstName, lastName, role, email } = req.body;
 
-    if (!name || !email || !password) {
+    if (!firstName || !lastName || !role || !email) {
       return res.status(400).json({
-        message: "Name, email and password are required",
+        message: "First name, last name, role and email are required",
       });
     }
 
-    const nameParts = name.trim().split(/\s+/);
-
-    if (nameParts.length < 2) {
+    if (
+      typeof firstName !== "string" ||
+      typeof lastName !== "string" ||
+      typeof role !== "string" ||
+      typeof email !== "string"
+    ) {
       return res.status(400).json({
-        message: "Please provide the staff member's first and last name",
+        message: "First name, last name, role and email must be strings",
       });
     }
 
-    const firstName = nameParts[0];
-    const lastName = nameParts.slice(1).join(" ");
+    const normalizedFirstName = firstName.trim();
+    const normalizedLastName = lastName.trim();
+    const normalizedEmail = email.trim().toLowerCase();
+    const allowedRoles = ["super-admin", "inventory-manager"];
 
-    const existingUser = await User.findOne({ email });
+    if (!normalizedFirstName || !normalizedLastName) {
+      return res.status(400).json({
+        message: "First name and last name cannot be empty",
+      });
+    }
 
+    if (!allowedRoles.includes(role)) {
+      return res.status(400).json({
+        message: "Role must be either 'super-admin' or 'inventory-manager'",
+      });
+    }
+
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(normalizedEmail)) {
+      return res.status(400).json({
+        message: "Please provide a valid email address",
+      });
+    }
+
+    const existingUser = await User.findOne({ email: normalizedEmail });
     if (existingUser) {
       return res.status(409).json({
         message: "A user with this email already exists",
       });
     }
 
+    const temporaryPassword = `Temp${Math.random()
+      .toString(36)
+      .slice(2, 10)}!A1`;
     const salt = await bcrypt.genSalt(10);
-    const hashedPassword = await bcrypt.hash(password, salt);
+    const hashedPassword = await bcrypt.hash(temporaryPassword, salt);
 
     const staff = new User({
-      firstName,
-      lastName,
-      email,
+      firstName: normalizedFirstName,
+      lastName: normalizedLastName,
+      email: normalizedEmail,
       password: hashedPassword,
-      role: "inventory-manager",
-      HasAdminAccess: false,
+      role,
+      HasAdminAccess: role === "super-admin",
     });
 
     await staff.save();
-    await sendStaffCredentials({ 
-      email,
-      name,
-      password,
-    });
+
+    try {
+      await sendStaffCredentials({
+        email: normalizedEmail,
+        name: `${normalizedFirstName} ${normalizedLastName}`.trim(),
+        password: temporaryPassword,
+        role,
+      });
+    } catch (emailError) {
+      console.error("Failed to send staff account email:", emailError.message);
+    }
 
     const staffResponse = staff.toObject();
     delete staffResponse.password;
 
     return res.status(201).json({
-      message: "Inventory manager created successfully",
+      message: `${role === "super-admin" ? "Super admin" : "Inventory manager"} created successfully`,
       staff: staffResponse,
     });
   } catch (error) {
@@ -450,6 +482,7 @@ exports.createStaff = async (req, res) => {
 
     return res.status(500).json({
       message: "Failed to create staff",
+      error: error.message,
     });
   }
 };
