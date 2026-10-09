@@ -159,6 +159,7 @@ exports.getAllProducts = async (req, res) => {
   }
 };
 
+//Search-products endpoint
 exports.searchProducts = async (req, res) => {
   try {
     const filter = buildProductFilter(req.query);
