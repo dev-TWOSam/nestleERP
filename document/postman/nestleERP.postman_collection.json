@@ -1,7 +1,7 @@
 {
   "info": {
     "name": "nestleERP Backend API",
-    "description": "Local development collection. Set bootstrapToken from backend/.env before the one-time bootstrap request. Login and OTP verification scripts save authToken and resetToken automatically.",
+    "description": "Production API collection. Set bootstrapToken from backend/.env before the one-time bootstrap request. Login and OTP verification scripts save authToken and resetToken automatically. Change baseUrl to http://localhost:4001 when using a local backend.",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "item": [
@@ -296,7 +296,7 @@
     }
   ],
   "variable": [
-    { "key": "baseUrl", "value": "http://localhost:4001" },
+    { "key": "baseUrl", "value": "https://nestleerp.onrender.com" },
     { "key": "authToken", "value": "" },
     { "key": "bootstrapToken", "value": "" },
     { "key": "resetToken", "value": "" },
