@@ -3,6 +3,8 @@ const Product = require("../models/products");
 const cloudinary = require("../config/cloudinary"); // Import the Cloudinary configuration
 
 const escapeRegex = (value) => value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+const isValidPrice = (price) =>
+  price !== "" && Number.isFinite(Number(price)) && Number(price) >= 1;
 
 // Create a product with image upload to Cloudinary
 exports.createProduct = async (req, res) => {
@@ -23,14 +25,21 @@ exports.createProduct = async (req, res) => {
       !name ||
       !description ||
       !category ||
-      !price ||
+      price === undefined ||
+      price === null ||
       !size ||
-      !quantity ||
+      quantity === undefined ||
+      quantity === null ||
+      quantity === "" ||
       !color
     ) {
       return res
         .status(400)
         .json({ message: "Please complete all required fields" });
+    }
+
+    if (!isValidPrice(price)) {
+      return res.status(400).json({ message: "Price must be at least 1" });
     }
 
     if (!req.file) {
@@ -288,13 +297,28 @@ exports.updateProduct = async (req, res) => {
       color,
     } = req.body;
 
+    if (
+      price !== undefined &&
+      price !== null &&
+      price !== "" &&
+      !isValidPrice(price)
+    ) {
+      return res.status(400).json({ message: "Price must be at least 1" });
+    }
+
     const updatedData = {
       name: name || product.name,
       description: description || product.description,
       category: category || product.category,
-      price: price || product.price,
+      price:
+        price !== undefined && price !== null && price !== ""
+          ? price
+          : product.price,
       size: size || product.size,
-      quantity: quantity || product.quantity,
+      quantity:
+        quantity !== undefined && quantity !== null && quantity !== ""
+          ? quantity
+          : product.quantity,
       status: status || product.status,
       color: color || product.color,
     };
