@@ -22,6 +22,9 @@ const createError = (status, message) => {
 const validateEmail = (email) =>
   typeof email === "string" && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
 
+const isValidName = (name) =>
+  typeof name === "string" && /^[a-zA-Z\s\-']{2,50}$/.test(name.trim());
+
 const getPasswordError = (password) => {
   if (typeof password !== "string" || !PASSWORD_REGEX.test(password)) {
     return "Password must be 12 to 30 characters and include uppercase, lowercase, a number, and a special character (@, #, $, !, %, *, ?, &, or _).";
@@ -41,10 +44,15 @@ const validatePasswordPair = (password, confirmation) => {
 };
 
 const normalizeEmail = (email) => {
-  if (!validateEmail(email))
+  if (typeof email !== "string")
     throw createError(400, "Please provide a valid email address");
-  return email.trim().toLowerCase();
+  const normalizedEmail = email.trim().toLowerCase();
+  if (!validateEmail(normalizedEmail))
+    throw createError(400, "Please provide a valid email address");
+  return normalizedEmail;
 };
+
+const isValidPassword = (password) => getPasswordError(password) === null;
 
 const emailQuery = (email) => ({
   email: new RegExp(`^${email.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}$`, "i"),
@@ -392,4 +400,8 @@ module.exports = {
   verifyPasswordResetOtp,
   resetPassword,
   getPasswordError,
+  isValidEmail: validateEmail,
+  isValidName,
+  isValidPassword,
+  normalizeEmail,
 };

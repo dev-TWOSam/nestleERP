@@ -2,23 +2,10 @@ const express = require("express");
 
 const authenticate = require("../middleware/auth");
 const authorize = require("../middleware/authorize");
-const accountSecurityController = require("../controllers/accountSecurity");
 
 const router = express.Router();
 
 const userController = require("../controllers/users");
-
-router.post(
-  "/bootstrap/super-admin",
-  accountSecurityController.bootstrapSuperAdmin,
-);
-router.post("/password/change", accountSecurityController.changePassword);
-router.post("/password/forgot", accountSecurityController.requestPasswordReset);
-router.post(
-  "/password/verify-otp",
-  accountSecurityController.verifyPasswordResetOtp,
-);
-router.post("/password/reset", accountSecurityController.resetPassword);
 
 // Route to create a new user
 router.post("/", userController.createUser);

@@ -1,5 +1,8 @@
+const mongoose = require("mongoose");
 const Product = require("../models/products");
 const cloudinary = require("../config/cloudinary"); // Import the Cloudinary configuration
+
+const escapeRegex = (value) => value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 
 // Create a product with image upload to Cloudinary
 exports.createProduct = async (req, res) => {
@@ -62,35 +65,51 @@ const buildProductFilter = (query = {}) => {
   const { id, name, q, category, price, minPrice, maxPrice, size } = query;
 
   if (id !== undefined && id !== null && id !== "") {
-    const normalizedId = String(id).trim();
-    if (!normalizedId) {
-      throw new Error("Product id cannot be empty");
+    if (typeof id !== "string") {
+      throw new Error("Product id must be a valid ObjectId");
+    }
+    const normalizedId = id.trim();
+    if (!mongoose.Types.ObjectId.isValid(normalizedId)) {
+      throw new Error("Invalid product id format");
     }
     filter._id = normalizedId;
   }
 
-  if (name || q) {
-    const searchValue = (name || q || "").trim();
+  const rawSearchValue = name !== undefined ? name : q;
+  if (rawSearchValue !== undefined) {
+    if (typeof rawSearchValue !== "string") {
+      throw new Error("Product name search value must be a string");
+    }
+    const searchValue = rawSearchValue.trim();
     if (!searchValue) {
       throw new Error("Product name search value cannot be empty");
     }
-    filter.name = { $regex: searchValue, $options: "i" };
+    filter.name = { $regex: escapeRegex(searchValue), $options: "i" };
   }
 
   if (category !== undefined && category !== null && category !== "") {
-    const normalizedCategory = String(category).trim();
+    if (typeof category !== "string") {
+      throw new Error("Category filter must be a string");
+    }
+    const normalizedCategory = category.trim();
     if (!normalizedCategory) {
       throw new Error("Category filter cannot be empty");
     }
-    filter.category = { $regex: normalizedCategory, $options: "i" };
+    filter.category = {
+      $regex: escapeRegex(normalizedCategory),
+      $options: "i",
+    };
   }
 
   if (size !== undefined && size !== null && size !== "") {
-    const normalizedSize = String(size).trim();
+    if (typeof size !== "string") {
+      throw new Error("Size filter must be a string");
+    }
+    const normalizedSize = size.trim();
     if (!normalizedSize) {
       throw new Error("Size filter cannot be empty");
     }
-    filter.size = { $regex: normalizedSize, $options: "i" };
+    filter.size = { $regex: escapeRegex(normalizedSize), $options: "i" };
   }
 
   const parseAmount = (rawValue, fieldName) => {
@@ -148,7 +167,8 @@ exports.getAllProducts = async (req, res) => {
 
     if (
       error.message.includes("Invalid") ||
-      error.message.includes("must be")
+      error.message.includes("must be") ||
+      error.message.includes("cannot be")
     ) {
       return res.status(400).json({ message: error.message });
     }
