@@ -1,0 +1,224 @@
+.admin-products__header {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: var(--space-5);
+  margin-bottom: var(--space-6);
+}
+
+.admin-products__eyebrow {
+  margin-bottom: var(--space-2);
+  color: var(--color-muted);
+  font-size: 14px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.admin-products__header h1 {
+  margin-bottom: var(--space-3);
+}
+
+.admin-products__description {
+  margin-bottom: 0;
+  color: var(--color-muted);
+}
+
+.admin-products__toolbar {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(180px, 1fr));
+  align-items: end;
+  gap: var(--space-4);
+  margin-bottom: var(--space-5);
+  padding: var(--space-5);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+}
+
+.admin-products__search {
+  grid-column: span 2;
+}
+
+.admin-products__toolbar .button {
+  justify-self: start;
+}
+
+.admin-products__table-wrapper {
+  overflow: hidden;
+  background: var(--color-background);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+}
+
+.admin-products__table-scroll {
+  overflow-x: auto;
+}
+
+.admin-products__table {
+  width: 100%;
+  min-width: 900px;
+  border-collapse: collapse;
+}
+
+.admin-products__table th,
+.admin-products__table td {
+  padding: var(--space-4);
+  text-align: left;
+  vertical-align: middle;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.admin-products__table th {
+  background: var(--color-surface);
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.admin-products__table tbody tr:last-child td {
+  border-bottom: 0;
+}
+
+.admin-products__product {
+  display: flex;
+  align-items: center;
+  min-width: 220px;
+  gap: var(--space-3);
+}
+
+.admin-products__image {
+  width: 56px;
+  height: 56px;
+  flex: 0 0 56px;
+  object-fit: cover;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  background: var(--color-surface);
+}
+
+.admin-products__product-name {
+  margin: 0;
+  font-weight: 700;
+}
+
+.admin-products__product-description {
+  margin: 4px 0 0;
+  color: var(--color-muted);
+  font-size: 14px;
+}
+
+.admin-products__status {
+  display: inline-flex;
+  padding: 4px 8px;
+  border: 1px solid var(--color-border);
+  border-radius: 999px;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.admin-products__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+.admin-products__action {
+  min-height: 36px;
+  padding: 7px 12px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  background: var(--color-background);
+  font-weight: 700;
+}
+
+.admin-products__action:hover {
+  background: var(--color-surface);
+}
+
+.admin-products__action--danger {
+  color: var(--color-error);
+}
+
+.admin-products__state {
+  padding: var(--space-7);
+  color: var(--color-muted);
+  text-align: center;
+}
+
+.pagination {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-3);
+  margin-top: var(--space-5);
+}
+
+.pagination .button:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+.dashboard-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+
+  padding: 10px 18px;
+
+  background: #222;
+  color: #fff;
+
+  text-decoration: none;
+
+  font-size: 14px;
+  font-weight: 600;
+
+  border: 1px solid #222;
+  border-radius: 8px;
+
+  cursor: pointer;
+
+  transition:
+    background-color 0.2s ease,
+    color 0.2s ease,
+    transform 0.2s ease,
+    box-shadow 0.2s ease;
+}
+
+.dashboard-btn:hover {
+  background: #fff;
+  color: #222;
+
+  transform: translateY(-1px);
+
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
+}
+
+.dashboard-btn:focus {
+  outline: 2px solid #222;
+  outline-offset: 3px;
+}
+
+@media (max-width: 800px) {
+  .admin-products__header {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .admin-products__toolbar {
+    grid-template-columns: 1fr;
+  }
+
+  .admin-products__search {
+    grid-column: auto;
+  }
+
+  .admin-products__toolbar .button {
+    width: 100%;
+  }
+
+  .pagination {
+    align-items: stretch;
+    flex-direction: column;
+  }
+}
