@@ -3,6 +3,8 @@ const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
 const emailService = require("../utils/sendEmail");
 const accountSecurity = require("../services/accountSecurity");
+const { isValidEmail, isValidName, isValidPassword, normalizeEmail } =
+  accountSecurity;
 
 const sendSecurityResponse = async (res, action, successStatus = 200) => {
   try {

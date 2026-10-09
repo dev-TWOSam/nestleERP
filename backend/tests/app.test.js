@@ -21,6 +21,38 @@ describe("updated staff creation and product search requirements", () => {
     jest.restoreAllMocks();
   });
 
+  test("creates a valid normal user with shared validation helpers", async () => {
+    jest.spyOn(User, "findOne").mockResolvedValue(null);
+    jest.spyOn(bcrypt, "genSalt").mockResolvedValue("salt");
+    jest.spyOn(bcrypt, "hash").mockResolvedValue("hashed-password");
+    jest.spyOn(User.prototype, "save").mockResolvedValue();
+
+    const req = {
+      body: {
+        firstName: "Ada",
+        lastName: "Lovelace",
+        gender: "Female",
+        email: " Ada@Example.com ",
+        password: "StrongPass1!",
+        location: "Lagos",
+        phoneCountryCode: "+234",
+        phone: "8012345678",
+        address: "10 Main Road",
+      },
+    };
+    const res = {
+      status: jest.fn().mockReturnThis(),
+      json: jest.fn(),
+    };
+
+    await userController.createUser(req, res);
+
+    expect(res.status).toHaveBeenCalledWith(201);
+    expect(res.json.mock.calls[0][0].user.email).toBe("ada@example.com");
+    expect(res.json.mock.calls[0][0].user).not.toHaveProperty("password");
+    expect(bcrypt.hash).toHaveBeenCalledWith("StrongPass1!", "salt");
+  });
+
   test("createStaff accepts the supplied password and does not auto-generate one", async () => {
     const saveMock = jest.fn().mockResolvedValue({
       _id: "staff-id",
@@ -99,7 +131,7 @@ describe("updated staff creation and product search requirements", () => {
   test("searchProducts supports name, id and category/price/size filters with strict validation", async () => {
     const products = [
       {
-        _id: "product-1",
+        _id: "507f1f77bcf86cd799439011",
         name: "Smart Watch",
         description: "Fitness tracking watch",
         category: "Electronics",
@@ -122,7 +154,7 @@ describe("updated staff creation and product search requirements", () => {
       },
     ];
 
-    jest.spyOn(Product, "find").mockReturnValue({
+    const findSpy = jest.spyOn(Product, "find").mockReturnValue({
       sort: jest.fn().mockResolvedValue(products),
     });
 
@@ -153,12 +185,35 @@ describe("updated staff creation and product search requirements", () => {
 
     expect(invalidRes.status).toHaveBeenCalledWith(400);
 
-    const byIdReq = { query: { id: "product-1" } };
+    const byIdReq = { query: { id: "507f1f77bcf86cd799439011" } };
     const byIdRes = { status: jest.fn().mockReturnThis(), json: jest.fn() };
     await productController.searchProducts(byIdReq, byIdRes);
 
     expect(byIdRes.status).toHaveBeenCalledWith(200);
     const byIdPayload = byIdRes.json.mock.calls[0][0];
-    expect(byIdPayload.products[0]._id).toBe("product-1");
+    expect(byIdPayload.products[0]._id).toBe("507f1f77bcf86cd799439011");
+    expect(findSpy).toHaveBeenLastCalledWith({
+      _id: "507f1f77bcf86cd799439011",
+    });
+
+    const invalidIdRes = {
+      status: jest.fn().mockReturnThis(),
+      json: jest.fn(),
+    };
+    await productController.searchProducts(
+      { query: { id: "not-an-object-id" } },
+      invalidIdRes,
+    );
+    expect(invalidIdRes.status).toHaveBeenCalledWith(400);
+
+    const regexRes = { status: jest.fn().mockReturnThis(), json: jest.fn() };
+    await productController.searchProducts(
+      { query: { name: "(Smart|Office).*" } },
+      regexRes,
+    );
+    expect(regexRes.status).toHaveBeenCalledWith(200);
+    expect(findSpy).toHaveBeenLastCalledWith({
+      name: { $regex: "\\(Smart\\|Office\\)\\.\\*", $options: "i" },
+    });
   });
 });
