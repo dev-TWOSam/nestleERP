@@ -26,7 +26,9 @@ app.use("/api/users", userRoutes);
 
 // Health check route
 app.get("/", (req, res) => {
-  res.send(`Hello World! You Successfully Accessed ${req.originalUrl}`);
+  res.send(
+    `Hello World! You Successfully Accessed nestleERP Backend ${req.originalUrl}`,
+  );
 });
 
 // Health check route

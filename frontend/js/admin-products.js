@@ -19,7 +19,7 @@ const paginationInfo = document.querySelector("#pagination-info");
 
 let products = [];
 let currentPage = 1;
-const pageLimit = 10;
+const pageLimit = 12;
 
 const canManageProducts = () => hasRole("inventory-manager", "super-admin");
 
@@ -80,27 +80,98 @@ function escapeHtml(value) {
   return div.innerHTML;
 }
 
-function renderCategories() {
+async function loadCategories() {
   const selectedCategory = categoryFilter.value;
-  const categories = [
-    ...new Set(products.map((product) => product.category).filter(Boolean)),
-  ].sort();
 
-  if (selectedCategory && !categories.includes(selectedCategory)) {
-    categories.unshift(selectedCategory);
-  }
+  try {
+    const response = await api.products.categories();
 
-  categoryFilter.innerHTML = `
-    <option value="">All categories</option>
-    ${categories
-      .map(
+    const categories =
+      response?.data?.categories ??
+      response?.categories ??
+      response?.data ??
+      response;
+
+    const uniqueCategories = [];
+
+    if (Array.isArray(categories)) {
+      const seen = new Set();
+
+      categories.forEach((category) => {
+        const value = String(category ?? "").trim();
+
+        if (!value) {
+          return;
+        }
+
+        const key = value.toLowerCase();
+
+        if (!seen.has(key)) {
+          seen.add(key);
+          uniqueCategories.push(value);
+        }
+      });
+    }
+
+    uniqueCategories.sort((a, b) =>
+      a.localeCompare(b, undefined, {
+        sensitivity: "base",
+      }),
+    );
+
+    categoryFilter.innerHTML = `
+      <option value="">All categories</option>
+      ${uniqueCategories
+        .map(
+          (category) =>
+            `<option value="${escapeHtml(category)}">${escapeHtml(category)}</option>`,
+        )
+        .join("")}
+    `;
+
+    /*
+     * Preserve the currently selected category.
+     * This also handles a category that may no longer
+     * be returned by the backend.
+     */
+    if (
+      selectedCategory &&
+      !uniqueCategories.some(
         (category) =>
-          `<option value="${escapeHtml(category)}">${escapeHtml(category)}</option>`,
+          category.toLowerCase() === selectedCategory.toLowerCase(),
       )
-      .join("")}
-  `;
+    ) {
+      const option = document.createElement("option");
 
-  categoryFilter.value = selectedCategory;
+      option.value = selectedCategory;
+      option.textContent = selectedCategory;
+
+      categoryFilter.appendChild(option);
+    }
+
+    categoryFilter.value = selectedCategory;
+  } catch (error) {
+    console.error("Unable to load product categories:", error);
+
+    /*
+     * If the categories endpoint fails, retain the
+     * currently selected category instead of breaking
+     * the admin products page.
+     */
+    categoryFilter.innerHTML = `
+      <option value="">All categories</option>
+    `;
+
+    if (selectedCategory) {
+      const option = document.createElement("option");
+
+      option.value = selectedCategory;
+      option.textContent = selectedCategory;
+
+      categoryFilter.appendChild(option);
+      categoryFilter.value = selectedCategory;
+    }
+  }
 }
 
 function renderProducts() {
@@ -225,9 +296,8 @@ async function loadProducts() {
 
     products = getProductList(response);
 
-    renderCategories();
-    renderProducts();
-    renderPagination(getPagination(response));
+renderProducts();
+renderPagination(getPagination(response));
   } catch (error) {
     products = [];
     tableBody.innerHTML = "";
@@ -307,7 +377,7 @@ nextPageButton.addEventListener("click", () => {
   }
 });
 
-function initializePage() {
+async function initializePage() {
   if (!isAuthenticated()) {
     window.location.href = "./admin-login.html";
     return;
@@ -320,7 +390,9 @@ function initializePage() {
   }
 
   addProductButton.hidden = false;
-  loadProducts();
+
+await loadCategories();
+await loadProducts();
 }
 
 initializePage();
