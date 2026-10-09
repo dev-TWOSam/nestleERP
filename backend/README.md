@@ -66,18 +66,26 @@ Copy-Item .env.example .env
 Required values include:
 
 ```env
-PORT=5000
+PORT=4001
 MONGODB_URI=your_mongodb_connection_string
 JWT_SECRET=your_long_random_jwt_secret
 PASSWORD_RESET_SECRET=optional_long_random_secret_for_reset_otp_hashing
 SUPER_ADMIN_BOOTSTRAP_TOKEN=required_long_random_one_time_bootstrap_secret
+CLOUDINARY_CLOUD_NAME=your_cloudinary_cloud_name
+CLOUDINARY_API_KEY=your_cloudinary_api_key
+CLOUDINARY_API_SECRET=your_cloudinary_api_secret
 SMTP_HOST=your_smtp_host
 SMTP_PORT=587
 SMTP_USER=your_email
 SMTP_PASS=your_email_password
-FRONTEND_URL=http://localhost:3000
+FRONTEND_URL=https://nestleerp.vercel.app
 NODE_ENV=development
 ```
+
+The local `.env.example` uses `PORT=4001`; the application requires `PORT` and
+does not choose a default. `FRONTEND_URL` is used for login links in staff
+account emails. The API currently issues JWTs that expire after one hour;
+`JWT_EXPIRES_IN` is not used as a configuration setting.
 
 The bootstrap endpoint is disabled until `SUPER_ADMIN_BOOTSTRAP_TOKEN` is set.
 Send it in the `x-bootstrap-token` header when calling

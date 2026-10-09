@@ -3,14 +3,15 @@ info:
   title: nestleERP Backend API
   version: 1.1.0
   description: >-
-    API reference for nestleERP. Set the bootstrap token only in a local secret
-    store and send it in x-bootstrap-token for the one-time initial Super Admin
-    bootstrap. Password-reset OTPs and reset authorization expire after 10 minutes.
+    API reference for the deployed nestleERP backend. The backend listens on
+    the PORT environment variable; backend/.env.example sets PORT=4001.
+    There is no Swagger UI route configured by the application. Password-reset
+    OTPs and reset authorization expire after 10 minutes.
 servers:
   - url: https://nestleerp.onrender.com
     description: Production backend
   - url: http://localhost:4001
-    description: Local backend
+    description: Local backend when PORT=4001
 tags:
   - name: Health
   - name: Authentication
@@ -18,22 +19,38 @@ tags:
   - name: Users
   - name: Products
 paths:
+  /:
+    get:
+      tags: [Health]
+      summary: Backend root
+      description: Returns a plain-text greeting containing the requested path.
+      responses:
+        "200":
+          description: Backend greeting
+          content:
+            text/html:
+              schema:
+                type: string
   /health:
     get:
       tags: [Health]
       summary: Check backend health
       responses:
         "200":
-          description: Backend is running
+          description: Backend health information
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HealthResponse"
   /api/users/bootstrap/super-admin:
     post:
       tags: [Authentication]
       summary: Create the first Super Admin (one time)
       description: >-
-        Requires x-bootstrap-token matching SUPER_ADMIN_BOOTSTRAP_TOKEN. The
-        request is rejected if a Super Admin exists or bootstrap has already
-        been claimed. Do not include a role; this operation can only create a
-        Super Admin.
+        Requires the configured SUPER_ADMIN_BOOTSTRAP_TOKEN in the
+        x-bootstrap-token header. This endpoint can only create the first
+        Super Admin and is unavailable once that account exists. Keep the
+        token in a private secret store; never put it in tracked documentation.
       parameters:
         - $ref: "#/components/parameters/BootstrapToken"
       requestBody:
@@ -45,18 +62,28 @@ paths:
       responses:
         "201":
           description: First Super Admin created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UserMutationResponse"
         "400":
-          description: Invalid account fields or password
+          $ref: "#/components/responses/BadRequest"
         "401":
-          description: Missing or invalid bootstrap token
+          $ref: "#/components/responses/Unauthorized"
         "409":
-          description: Bootstrap already completed or in progress
+          $ref: "#/components/responses/Conflict"
+        "500":
+          $ref: "#/components/responses/ServerError"
         "503":
-          description: Bootstrap token is not configured on the server
+          $ref: "#/components/responses/ServiceUnavailable"
   /api/users/login:
     post:
       tags: [Authentication]
       summary: Sign in
+      description: >-
+        A successful regular login returns a one-hour JWT. A staff account
+        using a temporary password instead returns passwordChangeRequired
+        without a token and must change its password before signing in again.
       requestBody:
         required: true
         content:
@@ -73,14 +100,26 @@ paths:
                   - $ref: "#/components/schemas/LoginResponse"
                   - $ref: "#/components/schemas/PasswordChangeRequiredResponse"
         "400":
-          description: Missing or invalid request fields
+          $ref: "#/components/responses/BadRequest"
         "401":
-          description: Invalid password
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          description: Temporary password has expired
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PasswordChangeRequiredResponse"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/ServerError"
   /api/users/password/change:
     post:
       tags: [Password security]
       summary: Change a current or temporary password
-      description: A valid current password is required. Temporary passwords expire after 24 hours.
+      description: >-
+        This endpoint uses email and currentPassword and does not require a
+        bearer token. Temporary staff passwords expire after 24 hours.
       requestBody:
         required: true
         content:
@@ -90,19 +129,27 @@ paths:
       responses:
         "200":
           description: Password changed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MessageResponse"
         "400":
-          description: Password policy or confirmation validation failed
+          $ref: "#/components/responses/BadRequest"
         "401":
-          description: Current password is incorrect
+          $ref: "#/components/responses/Unauthorized"
         "403":
-          description: Temporary password expired
+          $ref: "#/components/responses/Forbidden"
         "404":
-          description: Account not found
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/ServerError"
   /api/users/password/forgot:
     post:
       tags: [Password security]
       summary: Request a password reset OTP
-      description: Sends a six-digit OTP to the registered email address. OTP is valid for 10 minutes.
+      description: >-
+        Sends a six-digit OTP to the registered email address. The OTP expires
+        after 10 minutes; another OTP cannot be requested for 60 seconds.
       requestBody:
         required: true
         content:
@@ -112,19 +159,25 @@ paths:
       responses:
         "200":
           description: OTP sent
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MessageResponse"
         "400":
-          description: Invalid email address
+          $ref: "#/components/responses/BadRequest"
         "404":
-          description: Email is not associated with a recognised user
+          $ref: "#/components/responses/NotFound"
         "429":
-          description: Rate limited; wait before requesting another OTP
+          $ref: "#/components/responses/RateLimited"
+        "500":
+          $ref: "#/components/responses/ServerError"
         "503":
-          description: Email delivery is unavailable
+          $ref: "#/components/responses/ServiceUnavailable"
   /api/users/password/verify-otp:
     post:
       tags: [Password security]
       summary: Verify a password reset OTP
-      description: OTP verification returns a short-lived, single-use reset token.
+      description: OTP verification returns a single-use reset token valid for 10 minutes.
       requestBody:
         required: true
         content:
@@ -139,7 +192,9 @@ paths:
               schema:
                 $ref: "#/components/schemas/VerifyOtpResponse"
         "400":
-          description: Invalid, expired, or previously used OTP
+          $ref: "#/components/responses/BadRequest"
+        "500":
+          $ref: "#/components/responses/ServerError"
   /api/users/password/reset:
     post:
       tags: [Password security]
@@ -152,9 +207,15 @@ paths:
               $ref: "#/components/schemas/ResetPasswordRequest"
       responses:
         "200":
-          description: Password reset; authorization invalidated
+          description: Password reset; reset authorization invalidated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MessageResponse"
         "400":
-          description: Invalid or expired reset token or password validation failed
+          $ref: "#/components/responses/BadRequest"
+        "500":
+          $ref: "#/components/responses/ServerError"
   /api/users:
     get:
       tags: [Users]
@@ -164,13 +225,21 @@ paths:
       responses:
         "200":
           description: Users returned
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UserListResponse"
         "401":
-          description: Authentication required
+          $ref: "#/components/responses/Unauthorized"
         "403":
-          description: Super Admin role required
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/ServerError"
     post:
       tags: [Users]
-      summary: Register a normal user
+      summary: Register a regular user
       requestBody:
         required: true
         content:
@@ -179,14 +248,24 @@ paths:
               $ref: "#/components/schemas/CreateUserRequest"
       responses:
         "201":
-          description: User created
+          description: User created; password is omitted from the returned user
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UserMutationResponse"
         "400":
-          description: Invalid or incomplete user data
+          $ref: "#/components/responses/BadRequest"
+        "500":
+          $ref: "#/components/responses/ServerError"
   /api/users/staff:
     post:
       tags: [Users]
       summary: Create an inventory manager or additional Super Admin
-      description: Super Admin authentication required. New staff must change the emailed temporary password at first login; it expires after 24 hours.
+      description: >-
+        Requires Super Admin authentication. Staff must change the temporary
+        password sent to their email before normal login; it expires after
+        24 hours. Email delivery failure is logged by the application and
+        does not change the successful create response.
       security:
         - bearerAuth: []
       requestBody:
@@ -197,15 +276,21 @@ paths:
               $ref: "#/components/schemas/CreateStaffRequest"
       responses:
         "201":
-          description: Staff account created
+          description: Staff account created; password is omitted from the response
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StaffMutationResponse"
         "400":
-          description: Invalid staff data or password
+          $ref: "#/components/responses/BadRequest"
         "401":
-          description: Authentication required
+          $ref: "#/components/responses/Unauthorized"
         "403":
-          description: Super Admin role required
+          $ref: "#/components/responses/Forbidden"
         "409":
-          description: Email already exists
+          $ref: "#/components/responses/Conflict"
+        "500":
+          $ref: "#/components/responses/ServerError"
   /api/users/{id}:
     parameters:
       - $ref: "#/components/parameters/Id"
@@ -217,15 +302,22 @@ paths:
       responses:
         "200":
           description: User returned
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UserResultResponse"
         "401":
-          description: Authentication required
+          $ref: "#/components/responses/Unauthorized"
         "403":
-          description: Super Admin role required
+          $ref: "#/components/responses/Forbidden"
         "404":
-          description: User not found
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/ServerError"
     put:
       tags: [Users]
       summary: Update user (Super Admin)
+      description: If changing a phone number, supply the country code and phone number fields together.
       security:
         - bearerAuth: []
       requestBody:
@@ -237,14 +329,20 @@ paths:
       responses:
         "200":
           description: User updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UserMutationResponse"
         "400":
-          description: Invalid user data
+          $ref: "#/components/responses/BadRequest"
         "401":
-          description: Authentication required
+          $ref: "#/components/responses/Unauthorized"
         "403":
-          description: Super Admin role required
+          $ref: "#/components/responses/Forbidden"
         "404":
-          description: User not found
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/ServerError"
     delete:
       tags: [Users]
       summary: Delete user (Super Admin)
@@ -253,24 +351,51 @@ paths:
       responses:
         "200":
           description: User deleted
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MessageResponse"
         "401":
-          description: Authentication required
+          $ref: "#/components/responses/Unauthorized"
         "403":
-          description: Super Admin role required
+          $ref: "#/components/responses/Forbidden"
         "404":
-          description: User not found
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/ServerError"
   /api/products:
     get:
       tags: [Products]
       summary: List products
+      description: The list endpoint accepts the same optional filters as product search.
+      parameters:
+        - $ref: "#/components/parameters/ProductIdFilter"
+        - $ref: "#/components/parameters/ProductNameFilter"
+        - $ref: "#/components/parameters/ProductCategoryFilter"
+        - $ref: "#/components/parameters/ProductSizeFilter"
+        - $ref: "#/components/parameters/ProductPriceFilter"
+        - $ref: "#/components/parameters/ProductMinPriceFilter"
+        - $ref: "#/components/parameters/ProductMaxPriceFilter"
       responses:
         "200":
           description: Product list returned
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProductListResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
         "404":
-          description: No products found
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/ServerError"
     post:
       tags: [Products]
       summary: Create product (Inventory Manager or Super Admin)
+      description: >-
+        Requires one image file in the image field. The upload middleware
+        accepts JPG, JPEG, and PNG files. status is optional and defaults to
+        In Stock.
       security:
         - bearerAuth: []
       requestBody:
@@ -282,50 +407,47 @@ paths:
       responses:
         "201":
           description: Product created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProductMutationResponse"
         "400":
-          description: Missing product data or image
+          $ref: "#/components/responses/BadRequest"
         "401":
-          description: Authentication required
+          $ref: "#/components/responses/Unauthorized"
         "403":
-          description: Inventory Manager or Super Admin role required
+          $ref: "#/components/responses/Forbidden"
+        "500":
+          $ref: "#/components/responses/ServerError"
   /api/products/search:
     get:
       tags: [Products]
       summary: Search and filter products
+      description: >-
+        name takes precedence over q when both are provided. Text filters
+        match case-insensitively. minPrice and maxPrice may be combined.
       parameters:
-        - in: query
-          name: id
-          schema: { type: string }
-          description: Product ID
-        - in: query
-          name: name
-          schema: { type: string }
-        - in: query
-          name: q
-          schema: { type: string }
-          description: Alternate name search parameter
-        - in: query
-          name: category
-          schema: { type: string }
-        - in: query
-          name: size
-          schema: { type: string }
-        - in: query
-          name: price
-          schema: { type: number, minimum: 0 }
-        - in: query
-          name: minPrice
-          schema: { type: number, minimum: 0 }
-        - in: query
-          name: maxPrice
-          schema: { type: number, minimum: 0 }
+        - $ref: "#/components/parameters/ProductIdFilter"
+        - $ref: "#/components/parameters/ProductNameFilter"
+        - $ref: "#/components/parameters/ProductQFilter"
+        - $ref: "#/components/parameters/ProductCategoryFilter"
+        - $ref: "#/components/parameters/ProductSizeFilter"
+        - $ref: "#/components/parameters/ProductPriceFilter"
+        - $ref: "#/components/parameters/ProductMinPriceFilter"
+        - $ref: "#/components/parameters/ProductMaxPriceFilter"
       responses:
         "200":
           description: Matching products returned
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProductSearchResponse"
         "400":
-          description: Invalid filter value
+          $ref: "#/components/responses/BadRequest"
         "404":
-          description: No matching products
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/ServerError"
   /api/products/categories/{category}:
     get:
       tags: [Products]
@@ -334,12 +456,19 @@ paths:
         - in: path
           name: category
           required: true
-          schema: { type: string }
+          schema:
+            type: string
       responses:
         "200":
           description: Matching products returned
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProductListResponse"
         "404":
-          description: No matching products
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/ServerError"
   /api/products/{id}:
     parameters:
       - $ref: "#/components/parameters/Id"
@@ -349,11 +478,20 @@ paths:
       responses:
         "200":
           description: Product returned
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProductResultResponse"
         "404":
-          description: Product not found
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/ServerError"
     put:
       tags: [Products]
       summary: Update product (Inventory Manager or Super Admin)
+      description: >-
+        All fields are optional; omitting image retains the existing image.
+        Numeric zero values are ignored by the current update implementation.
       security:
         - bearerAuth: []
       requestBody:
@@ -365,12 +503,18 @@ paths:
       responses:
         "200":
           description: Product updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProductMutationResponse"
         "401":
-          description: Authentication required
+          $ref: "#/components/responses/Unauthorized"
         "403":
-          description: Inventory Manager or Super Admin role required
+          $ref: "#/components/responses/Forbidden"
         "404":
-          description: Product not found
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/ServerError"
     delete:
       tags: [Products]
       summary: Delete product (Inventory Manager or Super Admin)
@@ -378,13 +522,19 @@ paths:
         - bearerAuth: []
       responses:
         "200":
-          description: Product deleted
+          description: Product deleted; deleted product is included in the response
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProductMutationResponse"
         "401":
-          description: Authentication required
+          $ref: "#/components/responses/Unauthorized"
         "403":
-          description: Inventory Manager or Super Admin role required
+          $ref: "#/components/responses/Forbidden"
         "404":
-          description: Product not found
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/ServerError"
 components:
   securitySchemes:
     bearerAuth:
@@ -398,143 +548,607 @@ components:
       required: true
       schema:
         type: string
-      description: Value of SUPER_ADMIN_BOOTSTRAP_TOKEN from the server environment.
+      description: SUPER_ADMIN_BOOTSTRAP_TOKEN configured in the backend environment.
     Id:
       in: path
       name: id
       required: true
       schema:
         type: string
+    ProductIdFilter:
+      in: query
+      name: id
+      schema:
+        type: string
+      description: MongoDB product ID accepted by the backend.
+    ProductNameFilter:
+      in: query
+      name: name
+      schema:
+        type: string
+      description: Case-insensitive product name search.
+    ProductQFilter:
+      in: query
+      name: q
+      schema:
+        type: string
+      description: Alternate name search parameter used when name is omitted.
+    ProductCategoryFilter:
+      in: query
+      name: category
+      schema:
+        type: string
+      description: Case-insensitive category filter.
+    ProductSizeFilter:
+      in: query
+      name: size
+      schema:
+        type: string
+      description: Case-insensitive size filter.
+    ProductPriceFilter:
+      in: query
+      name: price
+      schema:
+        type: number
+        minimum: 0
+      description: Exact price filter.
+    ProductMinPriceFilter:
+      in: query
+      name: minPrice
+      schema:
+        type: number
+        minimum: 0
+      description: Inclusive minimum price.
+    ProductMaxPriceFilter:
+      in: query
+      name: maxPrice
+      schema:
+        type: number
+        minimum: 0
+      description: Inclusive maximum price.
+  responses:
+    BadRequest:
+      description: Request validation failed
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+    Unauthorized:
+      description: Authentication or credential check failed
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+    Forbidden:
+      description: The authenticated account lacks permission or its temporary password expired
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+    NotFound:
+      description: Requested resource or account was not found
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+    Conflict:
+      description: Operation conflicts with existing account/bootstrap state
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+    RateLimited:
+      description: Wait before requesting another password reset OTP
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+    ServiceUnavailable:
+      description: Required bootstrap configuration or email delivery is unavailable
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+    ServerError:
+      description: Unexpected server error
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
   schemas:
-    BootstrapSuperAdminRequest:
+    HealthResponse:
       type: object
-      required: [firstName, lastName, email, password]
+      required: [status, message, requestedPath, timestamp]
       properties:
-        firstName: { type: string }
-        lastName: { type: string }
-        email: { type: string, format: email }
-        password:
-          { type: string, format: password, minLength: 12, maxLength: 30 }
+        status:
+          type: string
+          enum: [OK]
+        message:
+          type: string
+          example: nestleERP backend is running
+        requestedPath:
+          type: string
+          example: /health
+        timestamp:
+          type: string
+          format: date-time
+    MessageResponse:
+      type: object
+      required: [message]
+      properties:
+        message:
+          type: string
+    ErrorResponse:
+      type: object
+      required: [message]
+      properties:
+        message:
+          type: string
+        error:
+          type: string
     LoginRequest:
       type: object
       required: [email, password]
       properties:
-        email: { type: string, format: email }
-        password: { type: string, format: password }
+        email:
+          type: string
+          format: email
+        password:
+          type: string
+          format: password
     LoginResponse:
       type: object
+      required: [message, token]
       properties:
-        message: { type: string, example: Login successful }
-        token: { type: string }
+        message:
+          type: string
+          example: Login successful
+        token:
+          type: string
+          description: JWT valid for one hour.
     PasswordChangeRequiredResponse:
       type: object
+      required: [message, passwordChangeRequired]
       properties:
-        message: { type: string }
-        passwordChangeRequired: { type: boolean, example: true }
+        message:
+          type: string
+        passwordChangeRequired:
+          type: boolean
+          example: true
+    BootstrapSuperAdminRequest:
+      type: object
+      required: [firstName, lastName, email, password]
+      properties:
+        firstName:
+          type: string
+          minLength: 1
+        lastName:
+          type: string
+          minLength: 1
+        email:
+          type: string
+          format: email
+        password:
+          $ref: "#/components/schemas/Password"
     ChangePasswordRequest:
       type: object
       required: [email, currentPassword, newPassword, confirmPassword]
       properties:
-        email: { type: string, format: email }
-        currentPassword: { type: string, format: password }
+        email:
+          type: string
+          format: email
+        currentPassword:
+          type: string
+          format: password
         newPassword:
-          { type: string, format: password, minLength: 12, maxLength: 30 }
-        confirmPassword: { type: string, format: password }
+          $ref: "#/components/schemas/Password"
+        confirmPassword:
+          type: string
+          format: password
     ForgotPasswordRequest:
       type: object
       required: [email]
       properties:
-        email: { type: string, format: email }
+        email:
+          type: string
+          format: email
     VerifyOtpRequest:
       type: object
       required: [email, otp]
       properties:
-        email: { type: string, format: email }
-        otp: { type: string, pattern: '^\d{6}$', example: "123456" }
+        email:
+          type: string
+          format: email
+        otp:
+          type: string
+          pattern: "^\\d{6}$"
+          example: "123456"
     VerifyOtpResponse:
       type: object
+      required: [message, resetToken, expiresInSeconds]
       properties:
-        message: { type: string }
-        resetToken: { type: string }
-        expiresInSeconds: { type: integer, example: 600 }
+        message:
+          type: string
+          example: OTP verified
+        resetToken:
+          type: string
+          pattern: "^[0-9a-f]{64}$"
+        expiresInSeconds:
+          type: integer
+          example: 600
     ResetPasswordRequest:
       type: object
       required: [resetToken, newPassword, confirmPassword]
       properties:
-        resetToken: { type: string }
+        resetToken:
+          type: string
+          pattern: "^[0-9a-f]{64}$"
         newPassword:
-          { type: string, format: password, minLength: 12, maxLength: 30 }
-        confirmPassword: { type: string, format: password }
+          $ref: "#/components/schemas/Password"
+        confirmPassword:
+          type: string
+          format: password
+    Password:
+      type: string
+      format: password
+      minLength: 12
+      maxLength: 30
+      pattern: "^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d)(?=.*[@#$!%*?&_])[A-Za-z\\d@#$!%*?&_]{12,30}$"
+      description: Must include uppercase, lowercase, a digit, and one of @ # $ ! % * ? & _.
+    CreateUserRequest:
+      type: object
+      required:
+        - firstName
+        - lastName
+        - gender
+        - email
+        - password
+        - location
+        - phoneCountryCode
+        - phone
+        - address
+      properties:
+        firstName:
+          type: string
+          minLength: 2
+          maxLength: 50
+          pattern: "^[A-Za-z '\\-]{2,50}$"
+        lastName:
+          type: string
+          minLength: 2
+          maxLength: 50
+          pattern: "^[A-Za-z '\\-]{2,50}$"
+        gender:
+          type: string
+          enum: [Male, Female]
+        email:
+          type: string
+          format: email
+        password:
+          $ref: "#/components/schemas/Password"
+        location:
+          type: string
+          enum:
+            - Abia
+            - Adamawa
+            - Akwa Ibom
+            - Anambra
+            - Bauchi
+            - Bayelsa
+            - Benue
+            - Borno
+            - Cross River
+            - Delta
+            - Ebonyi
+            - Edo
+            - Ekiti
+            - Enugu
+            - FCT
+            - Gombe
+            - Imo
+            - Jigawa
+            - Kaduna
+            - Kano
+            - Katsina
+            - Kebbi
+            - Kogi
+            - Kwara
+            - Lagos
+            - Nasarawa
+            - Niger
+            - Ogun
+            - Ondo
+            - Osun
+            - Oyo
+            - Plateau
+            - Rivers
+            - Sokoto
+            - Taraba
+            - Yobe
+            - Zamfara
+        phoneCountryCode:
+          type: string
+          example: "+234"
+        phone:
+          type: string
+          example: "8012345678"
+        address:
+          type: string
     CreateStaffRequest:
       type: object
       required: [firstName, lastName, email, password, role]
       properties:
-        firstName: { type: string }
-        lastName: { type: string }
-        email: { type: string, format: email }
+        firstName:
+          type: string
+          minLength: 1
+        lastName:
+          type: string
+          minLength: 1
+        email:
+          type: string
+          format: email
         password:
-          { type: string, format: password, minLength: 12, maxLength: 30 }
+          $ref: "#/components/schemas/Password"
         role:
           type: string
           enum: [super-admin, inventory-manager]
-    CreateUserRequest:
-      type: object
-      required:
-        [
-          firstName,
-          lastName,
-          gender,
-          email,
-          password,
-          location,
-          phoneCountryCode,
-          phone,
-          address,
-        ]
-      properties:
-        firstName: { type: string }
-        lastName: { type: string }
-        gender: { type: string, enum: [Male, Female] }
-        email: { type: string, format: email }
-        password:
-          { type: string, format: password, minLength: 12, maxLength: 30 }
-        location: { type: string }
-        phoneCountryCode: { type: string, example: "+234" }
-        phone: { type: string }
-        address: { type: string }
     UpdateUserRequest:
       type: object
       properties:
-        firstName: { type: string }
-        lastName: { type: string }
-        email: { type: string, format: email }
-        phoneCountryCode: { type: string }
-        phone: { type: string }
-        location: { type: string }
-        address: { type: string }
+        firstName:
+          type: string
+        lastName:
+          type: string
+        email:
+          type: string
+          format: email
+        phoneCountryCode:
+          type: string
+          description: Supply with phone when changing the phone number.
+        phone:
+          type: string
+          description: Supply with phoneCountryCode when changing the phone number.
+        location:
+          $ref: "#/components/schemas/NigeriaLocation"
+        address:
+          type: string
+    NigeriaLocation:
+      type: string
+      enum:
+        - Abia
+        - Adamawa
+        - Akwa Ibom
+        - Anambra
+        - Bauchi
+        - Bayelsa
+        - Benue
+        - Borno
+        - Cross River
+        - Delta
+        - Ebonyi
+        - Edo
+        - Ekiti
+        - Enugu
+        - FCT
+        - Gombe
+        - Imo
+        - Jigawa
+        - Kaduna
+        - Kano
+        - Katsina
+        - Kebbi
+        - Kogi
+        - Kwara
+        - Lagos
+        - Nasarawa
+        - Niger
+        - Ogun
+        - Ondo
+        - Osun
+        - Oyo
+        - Plateau
+        - Rivers
+        - Sokoto
+        - Taraba
+        - Yobe
+        - Zamfara
+    UserRecord:
+      type: object
+      description: User document returned without the password field.
+      properties:
+        _id:
+          type: string
+        firstName:
+          type: string
+        lastName:
+          type: string
+        gender:
+          type: string
+          enum: [Male, Female]
+        email:
+          type: string
+          format: email
+        mustChangePassword:
+          type: boolean
+        temporaryPasswordExpiresAt:
+          type: string
+          format: date-time
+          nullable: true
+        location:
+          $ref: "#/components/schemas/NigeriaLocation"
+        phone:
+          type: string
+        address:
+          type: string
+        HasAdminAccess:
+          type: boolean
+        role:
+          type: string
+          enum: [user, inventory-manager, super-admin]
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+        __v:
+          type: integer
+      additionalProperties: true
+    UserMutationResponse:
+      type: object
+      required: [message, user]
+      properties:
+        message:
+          type: string
+        user:
+          $ref: "#/components/schemas/UserRecord"
+    StaffMutationResponse:
+      type: object
+      required: [message, staff]
+      properties:
+        message:
+          type: string
+        staff:
+          $ref: "#/components/schemas/UserRecord"
+    UserResultResponse:
+      type: object
+      required: [user]
+      properties:
+        user:
+          $ref: "#/components/schemas/UserRecord"
+    UserListResponse:
+      type: object
+      required: [count, users]
+      properties:
+        count:
+          type: integer
+        users:
+          type: array
+          items:
+            $ref: "#/components/schemas/UserRecord"
     ProductInput:
       type: object
       required:
-        [name, description, category, price, size, quantity, color, image]
+        - name
+        - description
+        - category
+        - price
+        - size
+        - quantity
+        - color
+        - image
       properties:
-        name: { type: string }
-        description: { type: string }
-        category: { type: string }
-        price: { type: number, minimum: 0 }
-        size: { type: string }
-        quantity: { type: integer, minimum: 0 }
-        status: { type: string }
-        color: { type: string }
-        image: { type: string, format: binary }
+        name:
+          type: string
+        description:
+          type: string
+        category:
+          type: string
+        price:
+          type: number
+          minimum: 1
+        size:
+          type: string
+        quantity:
+          type: number
+        status:
+          type: string
+          enum: [In Stock, Inactive, Out of Stock]
+          default: In Stock
+        color:
+          type: string
+        image:
+          type: string
+          format: binary
+          description: One JPG, JPEG, or PNG image file.
     ProductUpdateInput:
       type: object
       properties:
-        name: { type: string }
-        description: { type: string }
-        category: { type: string }
-        price: { type: number, minimum: 0 }
-        size: { type: string }
-        quantity: { type: integer, minimum: 0 }
-        status: { type: string }
-        color: { type: string }
-        image: { type: string, format: binary }
+        name:
+          type: string
+        description:
+          type: string
+        category:
+          type: string
+        price:
+          type: number
+          minimum: 1
+        size:
+          type: string
+        quantity:
+          type: number
+        status:
+          type: string
+          enum: [In Stock, Inactive, Out of Stock]
+        color:
+          type: string
+        image:
+          type: string
+          format: binary
+          description: Optional replacement JPG, JPEG, or PNG image file.
+    ProductRecord:
+      type: object
+      properties:
+        _id:
+          type: string
+        name:
+          type: string
+        description:
+          type: string
+        category:
+          type: string
+        price:
+          type: number
+        size:
+          type: string
+        quantity:
+          type: number
+        status:
+          type: string
+          enum: [In Stock, Inactive, Out of Stock]
+        color:
+          type: string
+        image:
+          type: string
+          format: uri
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+        __v:
+          type: integer
+      additionalProperties: true
+    ProductMutationResponse:
+      type: object
+      required: [message, product]
+      properties:
+        message:
+          type: string
+        product:
+          $ref: "#/components/schemas/ProductRecord"
+    ProductResultResponse:
+      type: object
+      required: [product]
+      properties:
+        product:
+          $ref: "#/components/schemas/ProductRecord"
+    ProductListResponse:
+      type: object
+      required: [products]
+      properties:
+        products:
+          type: array
+          items:
+            $ref: "#/components/schemas/ProductRecord"
+    ProductSearchResponse:
+      type: object
+      required: [count, products]
+      properties:
+        count:
+          type: integer
+        products:
+          type: array
+          items:
+            $ref: "#/components/schemas/ProductRecord"

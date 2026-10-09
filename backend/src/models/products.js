@@ -16,6 +16,7 @@ const productSchema = new mongoose.Schema(
     price: {
       type: Number,
       required: [true, "Please enter product price"],
+      min: [1, "Product price must be at least 1"],
     },
     size: {
       type: String,

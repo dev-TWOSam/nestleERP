@@ -1,13 +1,20 @@
 {
   "info": {
     "name": "nestleERP Backend API",
-    "description": "Production API collection. Set bootstrapToken from backend/.env before the one-time bootstrap request. Login and OTP verification scripts save authToken and resetToken automatically. Change baseUrl to http://localhost:4001 when using a local backend.",
+    "description": "NestleERP backend API. The baseUrl defaults to production; set it to your local backend URL for development. Login and OTP verification save authToken and resetToken for subsequent requests. Protected requests require the appropriate role.",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "item": [
     {
       "name": "Health",
       "item": [
+        {
+          "name": "Backend root",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/"
+          }
+        },
         {
           "name": "Health check",
           "request": {
@@ -33,7 +40,7 @@
               "raw": "{\n  \"firstName\": \"System\",\n  \"lastName\": \"Administrator\",\n  \"email\": \"admin@example.com\",\n  \"password\": \"StrongPass1!\"\n}"
             },
             "url": "{{baseUrl}}/api/users/bootstrap/super-admin",
-            "description": "Use only before a Super Admin exists. Copy SUPER_ADMIN_BOOTSTRAP_TOKEN from the ignored backend/.env into the collection variable."
+            "description": "Use only before a Super Admin exists. Provide SUPER_ADMIN_BOOTSTRAP_TOKEN through a private Postman environment/local variable named bootstrapToken; never save the token in this collection."
           }
         },
         {
@@ -259,7 +266,12 @@
                 { "key": "quantity", "value": "7", "type": "text" },
                 { "key": "color", "value": "Black", "type": "text" },
                 { "key": "status", "value": "In Stock", "type": "text" },
-                { "key": "image", "type": "file", "src": "" }
+                {
+                  "key": "image",
+                  "type": "file",
+                  "src": "",
+                  "description": "Required. Select a JPG, JPEG, or PNG file."
+                }
               ]
             },
             "url": "{{baseUrl}}/api/products"
