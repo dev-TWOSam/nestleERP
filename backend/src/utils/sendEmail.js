@@ -71,17 +71,7 @@ const sendPasswordResetOtp = async ({ email, otp }) => {
   });
 };
 
-const sendPasswordResetOtp = async ({ email, otp }) => {
-  await transporter.sendMail({
-    from: process.env.SMTP_USER,
-    to: email,
-    subject: "Your Nestle ERP password reset code",
-    text: `Your password reset code is ${otp}. It expires in 10 minutes and can only be used once. If you did not request this code, you can ignore this email.`,
-  });
-};
-
 module.exports = {
   sendPasswordResetOtp,
   sendStaffCredentials,
-  sendPasswordResetOtp,
 };
