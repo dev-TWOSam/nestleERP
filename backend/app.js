@@ -24,6 +24,12 @@ app.use("/api/products", productRoutes);
 const userRoutes = require("./src/routes/userRoutes");
 app.use("/api/users", userRoutes);
 
+// Health check route
+app.get("/", (req, res) => {
+  res.send(`Hello World! You Successfully Accessed ${req.originalUrl}`);
+});
+
+// Health check route
 app.get("/health", (req, res) => {
   res.status(200).json({
     status: "OK",
