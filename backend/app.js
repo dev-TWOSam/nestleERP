@@ -11,9 +11,24 @@ dotenv.config();
 // Import the database connection function
 const connectDB = require("./src/config/databaseConfig");
 
-// Middleware to enable Cross-Origin Resource Sharing (CORS) and enable cors for all routes
+// Middleware to enable Cross-Origin Resource Sharing (CORS)
 const cors = require("cors");
-app.use(cors());
+app.use(
+  cors({
+    origin: (origin, callback) => {
+      const allowedOrigins = (process.env.ALLOWED_ORIGINS || "")
+        .split(",")
+        .map((allowedOrigin) => allowedOrigin.trim())
+        .filter(Boolean);
+
+      if (!origin || allowedOrigins.includes(origin)) {
+        return callback(null, true);
+      }
+
+      return callback(null, false);
+    },
+  }),
+);
 
 const helmet = require("helmet");
 app.use(helmet());

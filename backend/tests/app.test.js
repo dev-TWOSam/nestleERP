@@ -14,6 +14,51 @@ describe("nestleERP backend health check", () => {
     expect(response.body.status).toBe("OK");
     expect(response.body.message).toBe("nestleERP backend is running");
   });
+
+  test("CORS allows configured frontend origins and omits the header for other origins", async () => {
+    const originalAllowedOrigins = process.env.ALLOWED_ORIGINS;
+    process.env.ALLOWED_ORIGINS =
+      "http://localhost:3000, https://nestleerp.vercel.app";
+
+    try {
+      const allowedResponse = await request(app)
+        .get("/health")
+        .set("Origin", "https://nestleerp.vercel.app");
+      const blockedResponse = await request(app)
+        .get("/health")
+        .set("Origin", "https://unlisted.example");
+
+      expect(allowedResponse.headers["access-control-allow-origin"]).toBe(
+        "https://nestleerp.vercel.app",
+      );
+      expect(blockedResponse.headers["access-control-allow-origin"]).toBeUndefined();
+    } finally {
+      if (originalAllowedOrigins === undefined) {
+        delete process.env.ALLOWED_ORIGINS;
+      } else {
+        process.env.ALLOWED_ORIGINS = originalAllowedOrigins;
+      }
+    }
+  });
+
+  test("CORS denies all browser origins when ALLOWED_ORIGINS is empty", async () => {
+    const originalAllowedOrigins = process.env.ALLOWED_ORIGINS;
+    process.env.ALLOWED_ORIGINS = "";
+
+    try {
+      const response = await request(app)
+        .get("/health")
+        .set("Origin", "https://nestleerp.vercel.app");
+
+      expect(response.headers["access-control-allow-origin"]).toBeUndefined();
+    } finally {
+      if (originalAllowedOrigins === undefined) {
+        delete process.env.ALLOWED_ORIGINS;
+      } else {
+        process.env.ALLOWED_ORIGINS = originalAllowedOrigins;
+      }
+    }
+  });
 });
 
 describe("updated staff creation and product search requirements", () => {
