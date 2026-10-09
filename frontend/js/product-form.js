@@ -196,14 +196,13 @@ function initializePage() {
     return;
   }
 
-  if (isEditMode) {
-    if (!hasRole("super-admin")) {
-      showMessage("Only Super Admins can edit products.");
-      disableForm();
-      return;
-    }
-  } else if (!hasRole("inventory-manager", "super-admin")) {
-    showMessage("You do not have permission to create products.");
+  if (!hasRole("inventory-manager", "super-admin")) {
+    showMessage(
+      isEditMode
+        ? "You do not have permission to edit products."
+        : "You do not have permission to create products.",
+    );
+
     disableForm();
     return;
   }
@@ -220,6 +219,7 @@ function initializePage() {
     formTitle.textContent = "Edit Product";
     formDescription.textContent = "Update the selected product.";
     imageInput.required = false;
+
     loadProduct();
   } else {
     formTitle.textContent = "Add Product";
