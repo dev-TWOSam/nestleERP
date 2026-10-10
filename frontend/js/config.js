@@ -135,18 +135,19 @@ deleteProduct: (productId) =>
         userId,
       )}`,
 
+
     userBootstrapStatus:
-      `${API_BASE_URL}/users/bootstrap-status`,
+      `${API_BASE_URL}/users/bootstrap/status`,
 
     userBootstrapSuperAdmin:
-      `${API_BASE_URL}/users/bootstrap-super-admin`,
+      `${API_BASE_URL}/users/bootstrap/super-admin`,
 
     userForgotPassword:
-      `${API_BASE_URL}/users/forgot-password`,
+      `${API_BASE_URL}/users/password/forgot`,
 
     userResetPassword: (token) =>
-      `${API_BASE_URL}/users/reset-password/${encodeURIComponent(token)}`,
+      `${API_BASE_URL}/users/password/reset/${encodeURIComponent(token)}`,
 
     userChangePassword:
-      `${API_BASE_URL}/users/change-password`,
+      `${API_BASE_URL}/users/password/change`,
   });
