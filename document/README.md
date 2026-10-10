@@ -19,8 +19,8 @@ URL when using that configuration. The Swagger document lists both production
 and local servers.
 
 Staff-account emails use `FRONTEND_URL` for their login link. In the deployed
-backend environment, set it to the frontend deployment:
-`https://nestleerp.vercel.app`.
+backend environment, set it to the staff login page:
+`https://nestleerp.vercel.app/pages/admin-login.html`.
 
 ## Postman usage
 

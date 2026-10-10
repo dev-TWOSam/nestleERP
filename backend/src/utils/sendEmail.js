@@ -38,7 +38,9 @@ const sendStaffCredentials = async ({
 
   let html = fs.readFileSync(templatePath, "utf8");
 
-  const loginUrl = process.env.FRONTEND_URL || "http://localhost:3000";
+  const frontendUrl =
+    process.env.FRONTEND_URL || "https://nestleerp.vercel.app";
+  const loginUrl = new URL("/pages/admin-login.html", frontendUrl).toString();
 
   const roleName = role === "inventory-manager" ? "Inventory Manager" : role;
 

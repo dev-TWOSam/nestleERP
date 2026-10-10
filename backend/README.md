@@ -79,13 +79,13 @@ SMTP_PORT=587
 SMTP_USER=your_email
 SMTP_PASS=your_email_password
 ALLOWED_ORIGINS=http://localhost:3000,https://nestleerp.vercel.app
-FRONTEND_URL=https://nestleerp.vercel.app
+FRONTEND_URL=https://nestleerp.vercel.app/pages/admin-login.html
 NODE_ENV=development
 ```
 
 The local `.env.example` uses `PORT=4001`; the application requires `PORT` and
 does not choose a default. `FRONTEND_URL` is used for login links in staff
-account emails. `ALLOWED_ORIGINS` is a comma-separated list used to permit
+account emails; the URL is resolved to `/pages/admin-login.html`. `ALLOWED_ORIGINS` is a comma-separated list used to permit
 browser requests only from the listed origins. An empty or missing value
 denies cross-origin browser access. Set the production allowlist in Render to
 `https://nestleerp.vercel.app`; add local origins only in local development.
