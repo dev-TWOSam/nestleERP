@@ -119,12 +119,21 @@ if (sortValue) {
   filters.sortOrder = sortOrder;
 }
 
-const response = await api.products.list(filters);
+const response = currentSearch
+  ? await api.products.search(filters)
+  : await api.products.list(filters);
 const products = getProductList(response);
 pagination = getPagination(response);
 displayProducts(products);
 updatePagination();
 } catch (error) {
+  // The search endpoint returns HTTP 404 when there are no matching products.
+  if (currentSearch && error?.status === 404) {
+    displayProducts([]);
+    pagination = null;
+    updatePagination();
+    return;
+  }
   console.error("Unable to load products:", error);
   productContainer.innerHTML = "<p>Unable to load products. Please try again.</p>"
   pagination = null;
