@@ -655,7 +655,7 @@ export const api =
             value !== ""
           ) {
             query.set(
-              key,
+              key === "search" ? "q" : key,
               String(value),
             );
           }
@@ -869,12 +869,15 @@ export const api =
         },
       ),
 
-    changePassword: (passwords) =>
+    changePassword: (
+      passwords,
+      { requiresAuth = true } = {},
+    ) =>
       apiRequest(
         API_ENDPOINTS.userChangePassword,
         {
           method: "PATCH",
-          requiresAuth: true,
+          requiresAuth,
           body: passwords,
         },
       ),
