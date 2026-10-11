@@ -199,9 +199,12 @@ describe("updated staff creation and product search requirements", () => {
       },
     ];
 
-    const findSpy = jest.spyOn(Product, "find").mockReturnValue({
-      sort: jest.fn().mockResolvedValue(products),
-    });
+    const query = {
+      sort: jest.fn().mockReturnThis(),
+      skip: jest.fn().mockReturnThis(),
+      limit: jest.fn().mockResolvedValue(products),
+    };
+    const findSpy = jest.spyOn(Product, "find").mockReturnValue(query);
 
     const validReq = {
       query: {
@@ -260,5 +263,92 @@ describe("updated staff creation and product search requirements", () => {
     expect(findSpy).toHaveBeenLastCalledWith({
       name: { $regex: "\\(Smart\\|Office\\)\\.\\*", $options: "i" },
     });
+  });
+
+  test("getAllProducts sorts and paginates, returning an empty array for no matches", async () => {
+    const query = {
+      sort: jest.fn().mockReturnThis(),
+      skip: jest.fn().mockReturnThis(),
+      limit: jest.fn().mockResolvedValue([]),
+    };
+    const findSpy = jest.spyOn(Product, "find").mockReturnValue(query);
+    const res = { status: jest.fn().mockReturnThis(), json: jest.fn() };
+
+    await productController.getAllProducts(
+      { query: { page: "2", limit: "5", sort: "price_asc" } },
+      res,
+    );
+
+    expect(findSpy).toHaveBeenCalledWith({});
+    expect(query.sort).toHaveBeenCalledWith({ price: 1 });
+    expect(query.skip).toHaveBeenCalledWith(5);
+    expect(query.limit).toHaveBeenCalledWith(5);
+    expect(res.status).toHaveBeenCalledWith(200);
+    expect(res.json.mock.calls[0][0].products).toEqual([]);
+  });
+
+  test("searchProducts searches q by id or case-insensitive name and caps results at ten", async () => {
+    const query = {
+      sort: jest.fn().mockReturnThis(),
+      skip: jest.fn().mockReturnThis(),
+      limit: jest.fn().mockResolvedValue([]),
+    };
+    const findSpy = jest.spyOn(Product, "find").mockReturnValue(query);
+    const res = { status: jest.fn().mockReturnThis(), json: jest.fn() };
+
+    await productController.searchProducts(
+      { query: { q: "507f1f77bcf86cd799439011" } },
+      res,
+    );
+
+    expect(findSpy).toHaveBeenCalledWith({
+      _id: "507f1f77bcf86cd799439011",
+    });
+    expect(query.limit).toHaveBeenCalledWith(10);
+    expect(res.status).toHaveBeenCalledWith(200);
+    expect(res.json.mock.calls[0][0].products).toEqual([]);
+
+    await productController.searchProducts(
+      { query: { q: "watch", limit: "30" } },
+      res,
+    );
+
+    expect(findSpy).toHaveBeenLastCalledWith({
+      name: { $regex: "watch", $options: "i" },
+    });
+    expect(query.limit).toHaveBeenLastCalledWith(10);
+  });
+
+  test("getProductsByCategory applies price filters and pagination", async () => {
+    const query = {
+      sort: jest.fn().mockReturnThis(),
+      skip: jest.fn().mockReturnThis(),
+      limit: jest.fn().mockResolvedValue([]),
+    };
+    const findSpy = jest.spyOn(Product, "find").mockReturnValue(query);
+    const res = { status: jest.fn().mockReturnThis(), json: jest.fn() };
+
+    await productController.getProductsByCategory(
+      {
+        params: {},
+        query: {
+          category: "Electronics",
+          minPrice: "10",
+          maxPrice: "100",
+          page: "3",
+          limit: "4",
+        },
+      },
+      res,
+    );
+
+    expect(findSpy).toHaveBeenCalledWith({
+      category: { $regex: "Electronics", $options: "i" },
+      price: { $gte: 10, $lte: 100 },
+    });
+    expect(query.skip).toHaveBeenCalledWith(8);
+    expect(query.limit).toHaveBeenCalledWith(4);
+    expect(res.status).toHaveBeenCalledWith(200);
+    expect(res.json.mock.calls[0][0].products).toEqual([]);
   });
 });

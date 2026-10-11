@@ -5,6 +5,64 @@ const cloudinary = require("../config/cloudinary"); // Import the Cloudinary con
 const escapeRegex = (value) => value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 const isValidPrice = (price) =>
   price !== "" && Number.isFinite(Number(price)) && Number(price) >= 1;
+const DEFAULT_PAGE = 1;
+const DEFAULT_LIMIT = 20;
+const MAX_SEARCH_LIMIT = 10;
+
+const parsePagination = (query = {}) => {
+  const parsePositiveInteger = (value, fieldName, defaultValue) => {
+    if (value === undefined) {
+      return defaultValue;
+    }
+
+    if (typeof value !== "string" || !/^\d+$/.test(value)) {
+      throw new Error(`${fieldName} must be a positive integer`);
+    }
+
+    const parsed = Number(value);
+    if (!Number.isSafeInteger(parsed) || parsed < 1) {
+      throw new Error(`${fieldName} must be a positive integer`);
+    }
+
+    return parsed;
+  };
+
+  const page = parsePositiveInteger(query.page, "Page", DEFAULT_PAGE);
+  const limit = parsePositiveInteger(query.limit, "Limit", DEFAULT_LIMIT);
+  const skip = (page - 1) * limit;
+
+  if (!Number.isSafeInteger(skip)) {
+    throw new Error("Pagination offset must be a safe integer");
+  }
+
+  return { page, limit, skip };
+};
+
+const getProductSort = (sort) => {
+  const sortOptions = {
+    name_asc: { name: 1 },
+    name_desc: { name: -1 },
+    price_asc: { price: 1 },
+    price_desc: { price: -1 },
+  };
+
+  if (sort === undefined) {
+    return { createdAt: -1 };
+  }
+
+  if (!Object.prototype.hasOwnProperty.call(sortOptions, sort)) {
+    throw new Error(
+      "Sort must be name_asc, name_desc, price_asc, or price_desc",
+    );
+  }
+
+  return sortOptions[sort];
+};
+
+const isInvalidQueryError = (error) =>
+  error.message.includes("Invalid") ||
+  error.message.includes("must be") ||
+  error.message.includes("cannot be");
 
 // Create a product with image upload to Cloudinary
 exports.createProduct = async (req, res) => {
@@ -69,6 +127,7 @@ exports.createProduct = async (req, res) => {
   }
 };
 
+// Build a filter object for querying products based on the provided query parameters
 const buildProductFilter = (query = {}) => {
   const filter = {};
   const { id, name, q, category, price, minPrice, maxPrice, size } = query;
@@ -165,20 +224,18 @@ const buildProductFilter = (query = {}) => {
 exports.getAllProducts = async (req, res) => {
   try {
     const filter = buildProductFilter(req.query);
-    const products = await Product.find(filter);
+    const { page, limit, skip } = parsePagination(req.query);
+    const sort = getProductSort(req.query.sort);
+    const products = await Product.find(filter)
+      .sort(sort)
+      .skip(skip)
+      .limit(limit);
 
-    if (!products || products.length === 0)
-      return res.status(404).json({ message: "No product exist in the store" });
-
-    return res.status(200).json({ products });
+    return res.status(200).json({ products: products || [], page, limit });
   } catch (error) {
     console.error("Error fetching products:", error);
 
-    if (
-      error.message.includes("Invalid") ||
-      error.message.includes("must be") ||
-      error.message.includes("cannot be")
-    ) {
+    if (isInvalidQueryError(error)) {
       return res.status(400).json({ message: error.message });
     }
 
@@ -192,23 +249,34 @@ exports.getAllProducts = async (req, res) => {
 exports.searchProducts = async (req, res) => {
   try {
     const filter = buildProductFilter(req.query);
-    const products = await Product.find(filter).sort({ createdAt: -1 });
+    const { page, limit: requestedLimit } = parsePagination(req.query);
+    const limit = Math.min(requestedLimit, MAX_SEARCH_LIMIT);
+    const skip = (page - 1) * limit;
+    const searchValue = req.query.q;
 
-    if (!products || products.length === 0) {
-      return res.status(404).json({
-        message: "No products found matching the provided search criteria",
-      });
+    if (searchValue !== undefined) {
+      if (typeof searchValue !== "string" || !searchValue.trim()) {
+        throw new Error("Product search value must be a non-empty string");
+      }
+      const normalizedSearch = searchValue.trim();
+      if (/^[a-f\d]{24}$/i.test(normalizedSearch)) {
+        filter._id = normalizedSearch;
+        delete filter.name;
+      } else if (req.query.name === undefined) {
+        filter.name = { $regex: escapeRegex(normalizedSearch), $options: "i" };
+      }
     }
+
+    const products = await Product.find(filter)
+      .sort({ createdAt: -1 })
+      .skip(skip)
+      .limit(limit);
 
     return res.status(200).json({ count: products.length, products });
   } catch (error) {
     console.error("Error searching products:", error);
 
-    if (
-      error.message.includes("Invalid") ||
-      error.message.includes("must be") ||
-      error.message.includes("cannot be")
-    ) {
+    if (isInvalidQueryError(error)) {
       return res.status(400).json({ message: error.message });
     }
 
@@ -222,25 +290,27 @@ exports.searchProducts = async (req, res) => {
 //Search-filter endpoint
 exports.getProductsByCategory = async (req, res) => {
   try {
-    const { category } = req.params;
+    const category = req.query.category || req.params.category;
 
     if (!category) {
       return res.status(400).json({ message: "Please provide a category" });
     }
 
-    const products = await Product.find({
-      category: { $regex: category, $options: "i" },
-    });
+    const filter = buildProductFilter({ ...req.query, category });
+    const { page, limit, skip } = parsePagination(req.query);
+    const products = await Product.find(filter)
+      .sort({ createdAt: -1 })
+      .skip(skip)
+      .limit(limit);
 
-    if (!products || products.length === 0) {
-      return res
-        .status(404)
-        .json({ message: "No products found for this category" });
-    }
-
-    return res.status(200).json({ products });
+    return res.status(200).json({ products: products || [], page, limit });
   } catch (error) {
     console.error("Error retrieving products by category:", error);
+
+    if (isInvalidQueryError(error)) {
+      return res.status(400).json({ message: error.message });
+    }
+
     return res.status(500).json({
       message: "Error retrieving products by category",
       error: error.message,
