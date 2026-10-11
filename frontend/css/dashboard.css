@@ -733,3 +733,33 @@
   text-align: left;
   cursor: pointer;
 }
+
+#edit-user-dialog {
+  margin: auto;
+  max-height: min(90vh, 800px);
+  overflow-y: auto;
+}
+
+#edit-user-dialog[open] {
+  display: block;
+}
+
+#edit-user-dialog .dashboard-dialog__card {
+  width: 100%;
+}
+
+#edit-user-dialog input,
+#edit-user-dialog select {
+  width: 100%;
+}
+
+#edit-user-dialog .dashboard-dialog__close,
+#edit-user-dialog .dashboard-dialog__actions button {
+  cursor: pointer;
+}
+
+@media (max-width: 520px) {
+  #edit-user-dialog {
+    width: calc(100% - 24px);
+  }
+}
