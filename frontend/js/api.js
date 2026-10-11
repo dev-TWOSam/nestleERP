@@ -623,6 +623,24 @@ export const api =
        Search + filters + sorting + pagination
     ===================================== */
 
+    search: (filters = {}) => {
+      const query = new URLSearchParams();
+
+      Object.entries(filters).forEach(([key, value]) => {
+        if (value !== undefined && value !== null && value !== "") {
+          // The backend search controller accepts q (or name), not search.
+          query.set(key === "search" ? "q" : key, String(value));
+        }
+      });
+
+      const queryString = query.toString();
+      const url = queryString
+        ? `${API_ENDPOINTS.productSearch}?${queryString}`
+        : API_ENDPOINTS.productSearch;
+
+      return apiRequest(url);
+    },
+
     list: (filters = {}) => {
       const query =
         new URLSearchParams();
