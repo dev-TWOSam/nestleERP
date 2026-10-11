@@ -25,7 +25,7 @@ router.post("/login", userController.login);
 router.post("/bootstrap/super-admin", userController.bootstrapSuperAdmin);
 
 // Password change and recovery routes
-router.post("/password/change", userController.changePassword);
+router.patch("/password/change", userController.changePassword);
 router.post("/password/forgot", userController.requestPasswordReset);
 router.post("/password/verify-otp", userController.verifyPasswordResetOtp);
 router.post("/password/reset", userController.resetPassword);

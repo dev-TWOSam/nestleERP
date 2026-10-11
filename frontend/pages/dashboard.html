@@ -421,6 +421,77 @@
       </form>
     </dialog>
 
+
+<dialog
+  class="dashboard-dialog dashboard-dialog--wide"
+  id="edit-user-dialog"
+  data-role="super-admin"
+  aria-labelledby="edit-user-title"
+>
+  <form class="dashboard-dialog__card" id="edit-user-form">
+    <div class="dashboard-dialog__heading">
+      <div>
+        <p class="dashboard-eyebrow">Super Admin</p>
+        <h2 id="edit-user-title">Edit user</h2>
+        <p>Update account details. Leave the password blank to keep the current password.</p>
+      </div>
+      <button class="dashboard-dialog__close" id="edit-user-close" type="button" aria-label="Close edit user dialog">×</button>
+    </div>
+
+    <input id="edit-user-id" name="userId" type="hidden" />
+
+    <div class="dashboard-staff-form-grid">
+      <div class="form-field">
+        <label class="form-label" for="edit-user-first-name">First name</label>
+        <input id="edit-user-first-name" name="firstName" type="text" required autocomplete="given-name" />
+      </div>
+      <div class="form-field">
+        <label class="form-label" for="edit-user-last-name">Last name</label>
+        <input id="edit-user-last-name" name="lastName" type="text" required autocomplete="family-name" />
+      </div>
+      <div class="form-field dashboard-staff-form-grid__wide">
+        <label class="form-label" for="edit-user-email">Email address</label>
+        <input id="edit-user-email" name="email" type="email" required autocomplete="email" />
+      </div>
+      <div class="form-field">
+        <label class="form-label" for="edit-user-phone">Phone number</label>
+        <input id="edit-user-phone" name="phone" type="tel" required autocomplete="tel" placeholder="+2348012345678" />
+      </div>
+      <div class="form-field">
+        <label class="form-label" for="edit-user-location">Location (State / FCT)</label>
+        <select id="edit-user-location" name="location" required>
+          <option value="">Select state / FCT</option>
+        </select>
+      </div>
+      <div class="form-field dashboard-staff-form-grid__wide">
+        <label class="form-label" for="edit-user-address">Address</label>
+        <input id="edit-user-address" name="address" type="text" required autocomplete="street-address" />
+      </div>
+      <div class="form-field dashboard-staff-form-grid__wide">
+        <label class="form-label" for="edit-user-password">New password (optional)</label>
+        <input
+          id="edit-user-password"
+          name="password"
+          type="password"
+          autocomplete="new-password"
+          minlength="12"
+          maxlength="30"
+          pattern="(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@#$!%*?&_])[A-Za-z\d@#$!%*?&_]{12,30}"
+          title="Use 12–30 characters with uppercase, lowercase, a number, and a special character."
+          aria-describedby="edit-user-password-help"
+        />
+        <small id="edit-user-password-help">12–30 characters, including uppercase, lowercase, a number and a special character. Leave blank to keep the current password.</small>
+      </div>
+    </div>
+
+    <div class="dashboard-dialog__actions">
+      <button class="button button--secondary" id="edit-user-cancel" type="button">Cancel</button>
+      <button class="button" id="edit-user-save" type="submit">Save changes</button>
+    </div>
+  </form>
+</dialog>
+
+
     <dialog
   class="dashboard-dialog"
   id="change-password-dialog"
@@ -440,7 +511,7 @@
         </h2>
 
         <p>
-          Enter your current password before choosing a new one.
+          Enter your current password before choosing a new one. Both Super Admins and Inventory Managers can change their own passwords.
         </p>
       </div>
 

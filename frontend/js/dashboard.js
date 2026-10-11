@@ -57,12 +57,24 @@ const roleSelect = document.querySelector("#role-select");
 const roleSaveButton = document.querySelector("#role-save");
 const roleDialogClose = document.querySelector("#role-dialog-close");
 const roleCancel = document.querySelector("#role-cancel");
-const changePasswordOpen = document.querySelector( "#change-password-open",);
-const changePasswordDialog = document.querySelector("#change-password-dialog",);
-const changePasswordForm = document.querySelector( "#change-password-form", );
-const changePasswordClose = document.querySelector( "#change-password-close",);
-const changePasswordCancel = document.querySelector( "#change-password-cancel",);
-const changePasswordSave = document.querySelector( "#change-password-save",);
+const changePasswordOpen = document.querySelector("#change-password-open");
+const changePasswordDialog = document.querySelector("#change-password-dialog");
+const changePasswordForm = document.querySelector("#change-password-form");
+const changePasswordClose = document.querySelector("#change-password-close");
+const changePasswordCancel = document.querySelector("#change-password-cancel");
+const changePasswordSave = document.querySelector("#change-password-save");
+
+const editUserDialog = document.querySelector("#edit-user-dialog");
+const editUserForm = document.querySelector("#edit-user-form");
+const editUserId = document.querySelector("#edit-user-id");
+const editUserFirstName = document.querySelector("#edit-user-first-name");
+const editUserLastName = document.querySelector("#edit-user-last-name");
+const editUserEmail = document.querySelector("#edit-user-email");
+const editUserPhone = document.querySelector("#edit-user-phone");
+const editUserLocation = document.querySelector("#edit-user-location");
+const editUserAddress = document.querySelector("#edit-user-address");
+const editUserPassword = document.querySelector("#edit-user-password");
+const editUserSave = document.querySelector("#edit-user-save");
 
 
 let users = [];
@@ -262,6 +274,13 @@ function renderStaffTable() {
           <button
             class="dashboard-table__action"
             type="button"
+            data-edit-user-id="${escapeHtml(user._id)}"
+          >
+            Edit user
+          </button>
+          <button
+            class="dashboard-table__action"
+            type="button"
             data-role-user-id="${escapeHtml(user._id)}"
             ${isCurrentAccount ? "disabled title=\"You cannot change your own role from this screen.\"" : ""}
           >
@@ -325,29 +344,25 @@ async function loadStaff() {
   }
 }
 
-function populateStaffLocations() {
-  if (!staffLocation) {
-    return;
-  }
-
-  const placeholder = staffLocation.querySelector('option[value=""]');
-  staffLocation.replaceChildren();
-
-  if (placeholder) {
-    staffLocation.appendChild(placeholder);
-  } else {
-    const option = document.createElement("option");
-    option.value = "";
-    option.textContent = "Select state / FCT";
-    staffLocation.appendChild(option);
-  }
+function populateLocationSelect(select, placeholderText) {
+  if (!select) return;
+  select.replaceChildren();
+  const placeholder = document.createElement("option");
+  placeholder.value = "";
+  placeholder.textContent = placeholderText;
+  select.appendChild(placeholder);
 
   NIGERIA_STATES.forEach((state) => {
     const option = document.createElement("option");
     option.value = state;
     option.textContent = state;
-    staffLocation.appendChild(option);
+    select.appendChild(option);
   });
+}
+
+function populateStaffLocations() {
+  populateLocationSelect(staffLocation, "Select state / FCT");
+  populateLocationSelect(editUserLocation, "Select state / FCT");
 }
 
 function randomCharacter(characters) {
@@ -395,6 +410,57 @@ function setGeneratedStaffPassword() {
     staffTemporaryPassword.value = generateTemporaryPassword();
   }
 }
+
+function openEditUserDialog(user) {
+  if (!hasRole(SUPER_ADMIN_ROLE)) {
+    showPageMessage("Only a Super Admin can edit user accounts.", {
+      type: "error",
+      container: dashboardMessage,
+    });
+    return;
+  }
+  if (!user || !editUserDialog || !editUserForm) return;
+
+  editUserForm.reset();
+  editUserId.value = user._id || user.id || "";
+  editUserFirstName.value = user.firstName ?? "";
+  editUserLastName.value = user.lastName ?? "";
+  editUserEmail.value = user.email ?? "";
+  editUserPhone.value = user.phone ?? "";
+  editUserAddress.value = user.address ?? "";
+  editUserPassword.value = "";
+
+  if (editUserLocation) {
+    const currentLocation = user.location ?? "";
+    if (currentLocation && ![...editUserLocation.options].some((option) => option.value === currentLocation)) {
+      const option = document.createElement("option");
+      option.value = currentLocation;
+      option.textContent = currentLocation;
+      editUserLocation.appendChild(option);
+    }
+    editUserLocation.value = currentLocation;
+  }
+
+  if (typeof editUserDialog.showModal === "function") {
+    editUserDialog.showModal();
+  } else {
+    showPageMessage("Your browser does not support this dialog. Please use an up-to-date browser.", {
+      type: "error",
+      container: dashboardMessage,
+    });
+  }
+}
+
+function closeEditUserDialog() {
+  if (editUserDialog?.open) editUserDialog.close();
+}
+
+document.querySelector("#edit-user-close")?.addEventListener("click", closeEditUserDialog);
+document.querySelector("#edit-user-cancel")?.addEventListener("click", closeEditUserDialog);
+editUserDialog?.addEventListener("click", (event) => {
+  if (event.target === editUserDialog) closeEditUserDialog();
+});
+editUserForm?.addEventListener("submit", saveEditedUser);
 
 function openCreateStaffDialog() {
   if (!hasRole(SUPER_ADMIN_ROLE)) {
@@ -636,9 +702,70 @@ async function deleteUser(userId) {
   }
 }
 
+async function saveEditedUser(event) {
+  event.preventDefault();
+
+  if (!hasRole(SUPER_ADMIN_ROLE)) {
+    showPageMessage("Only a Super Admin can update user accounts.", {
+      type: "error",
+      container: dashboardMessage,
+    });
+    return;
+  }
+
+  const userId = editUserId.value;
+  if (!userId) {
+    showPageMessage("Select a user before saving changes.", {
+      type: "error",
+      container: dashboardMessage,
+    });
+    return;
+  }
+
+  const payload = {
+    firstName: editUserFirstName.value.trim(),
+    lastName: editUserLastName.value.trim(),
+    email: editUserEmail.value.trim(),
+    phone: editUserPhone.value.trim(),
+    location: editUserLocation.value,
+    address: editUserAddress.value.trim(),
+  };
+  const password = editUserPassword.value;
+  if (password.trim()) payload.password = password;
+
+  setButtonLoading(editUserSave, true, "Saving...");
+  try {
+    const response = await apiRequest(userEndpoint(userId), {
+      method: "PUT",
+      requiresAuth: true,
+      body: payload,
+    });
+    closeEditUserDialog();
+    showPageMessage(response?.message || "User account updated successfully.", {
+      type: "success",
+      container: dashboardMessage,
+    });
+    await loadStaff();
+  } catch (error) {
+    showPageMessage(
+      error instanceof ApiError ? error.message : "Unable to update the user account.",
+      { type: "error", container: dashboardMessage },
+    );
+  } finally {
+    setButtonLoading(editUserSave, false);
+  }
+}
+
 function handleStaffAction(event) {
+  const editButton = event.target.closest("[data-edit-user-id]");
   const roleButton = event.target.closest("[data-role-user-id]");
   const deleteButton = event.target.closest("[data-delete-user-id]");
+
+  if (editButton) {
+    const user = users.find((item) => item._id === editButton.dataset.editUserId);
+    openEditUserDialog(user);
+    return;
+  }
 
   if (roleButton && !roleButton.disabled) {
     openRoleDialog(roleButton.dataset.roleUserId);
@@ -715,6 +842,13 @@ async function changePassword(
   event,
 ) {
   event.preventDefault();
+  if (!hasRole(SUPER_ADMIN_ROLE, INVENTORY_MANAGER_ROLE)) {
+  showPageMessage("You are not authorized to change your password.", {
+    type: "error",
+    container: dashboardMessage
+  });
+  return;
+}
 
   const payload =
     Object.fromEntries(
