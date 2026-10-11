@@ -284,6 +284,46 @@
   </form>
 </dialog>
 
+<dialog class="admin-auth-dialog" id="temporary-password-change-dialog">
+  <form class="admin-auth-dialog__card" id="temporary-password-change-form">
+    <div class="admin-auth-dialog__heading">
+      <div>
+        <p class="admin-login__eyebrow">First sign-in</p>
+        <h2>Change your temporary password</h2>
+        <p>Your staff account is ready. Set a new password before continuing.</p>
+      </div>
+    </div>
+
+    <div id="temporary-password-change-message" class="page-message" role="alert" hidden></div>
+
+    <div class="form-field">
+      <label class="form-label" for="temporary-change-email">Email address</label>
+      <input id="temporary-change-email" name="email" type="email" required readonly autocomplete="username" />
+    </div>
+
+    <div class="form-field">
+      <label class="form-label" for="temporary-change-current-password">Temporary password</label>
+      <input id="temporary-change-current-password" name="currentPassword" type="password" required autocomplete="current-password" />
+    </div>
+
+    <div class="form-field">
+      <label class="form-label" for="temporary-change-new-password">New password</label>
+      <input id="temporary-change-new-password" name="newPassword" type="password" minlength="12" maxlength="30" required autocomplete="new-password" aria-describedby="temporary-password-guidance" />
+      <p class="form-help" id="temporary-password-guidance">Use 12–30 characters with uppercase and lowercase letters, a number, and a special character.</p>
+    </div>
+
+    <div class="form-field">
+      <label class="form-label" for="temporary-change-confirm-password">Confirm new password</label>
+      <input id="temporary-change-confirm-password" name="confirmPassword" type="password" minlength="12" maxlength="30" required autocomplete="new-password" />
+    </div>
+
+    <div class="admin-auth-form-actions">
+      <button class="button button--secondary" id="temporary-password-change-cancel" type="button">Back to sign in</button>
+      <button class="button" id="temporary-password-change-submit" type="submit">Save new password</button>
+    </div>
+  </form>
+</dialog>
+
 <dialog
   class="admin-auth-dialog admin-auth-dialog--wide"
   id="bootstrap-admin-dialog"

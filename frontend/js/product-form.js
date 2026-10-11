@@ -15,6 +15,8 @@ const imageInput = document.querySelector("#image");
 const imagePreview = document.querySelector("#image-preview");
 const previewImage = document.querySelector("#preview-image");
 const imageHelp = document.querySelector("#image-help");
+const categoryInput = document.querySelector("#category");
+const categoryOptions = document.querySelector("#product-category-options");
 
 const params = new URLSearchParams(window.location.search);
 const productId = params.get("id");
@@ -69,6 +71,33 @@ function displayProductImage(imageUrl) {
 
   previewImage.src = imageUrl;
   imagePreview.hidden = false;
+}
+
+async function loadCategories() {
+  if (!categoryOptions) return;
+
+  try {
+    const response = await api.products.categories();
+    const categories = response?.data?.categories ?? response?.categories ?? [];
+    if (!Array.isArray(categories)) return;
+
+    const uniqueCategories = [...new Map(
+      categories
+        .map((value) => String(value ?? "").trim())
+        .filter(Boolean)
+        .map((value) => [value.toLowerCase(), value]),
+    ).values()].sort((a, b) => a.localeCompare(b, undefined, { sensitivity: "base" }));
+
+    categoryOptions.replaceChildren();
+    uniqueCategories.forEach((category) => {
+      const option = document.createElement("option");
+      option.value = category;
+      categoryOptions.appendChild(option);
+    });
+  } catch (error) {
+    // The field remains editable if categories cannot be fetched.
+    console.warn("Unable to load product category suggestions:", error);
+  }
 }
 
 async function loadProduct() {
@@ -214,6 +243,8 @@ function initializePage() {
     disableForm();
     return;
   }
+
+  loadCategories();
 
   if (isEditMode) {
     formTitle.textContent = "Edit Product";

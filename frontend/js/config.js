@@ -97,6 +97,9 @@ export const API_ENDPOINTS =
     products:
   `${API_BASE_URL}/products`,
 
+    productSearch:
+  `${API_BASE_URL}/products/search`,
+
 productCategories:
   `${API_BASE_URL}/products/categories`,
 
