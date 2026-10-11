@@ -13,6 +13,7 @@ const router = express.Router();
 router.get("/", productController.getAllProducts);
 
 // Route to get products by category
+router.get("/categories", productController.getProductsByCategory);
 router.get("/categories/:category", productController.getProductsByCategory);
 
 // Route to search products by name, id and filter by category, price, and size
