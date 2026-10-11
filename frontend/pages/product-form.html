@@ -43,8 +43,17 @@
             <div class="form-field">
               <label class="form-label" for="category"> Category </label>
 
-              <input id="category" name="category" type="text" required />
-
+              <input
+                id="category"
+                name="category"
+                type="text"
+                list="product-category-options"
+                autocomplete="off"
+                required
+                aria-describedby="category-help category-error"
+              />
+              <datalist id="product-category-options"></datalist>
+              <p class="form-help" id="category-help">Choose an existing category or enter a new one.</p>
               <p class="form-error" id="category-error" hidden></p>
             </div>
 
