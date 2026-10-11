@@ -43,11 +43,13 @@ function displayProducts(productList) {
     const productCard = document.createElement("div");
     productCard.classList.add("product-card");
     productCard.innerHTML = `
-    <img src="${product.image || ""} "alt="${product.name || "Product"}">
-    <h3>${product.name || "Unnamed Product"}</h3>
-    <p>${product.description || ""}</p>
-    <p>Price: ₦${product.price ?? "N/A"}</p>
-    <a href="pages/product-details.html?id=${product._id}">View Details</a>
+      <img src="${product.image || ""}" alt="${product.name || "Product"}">
+      <h3 class="product-card__name" title="${product.name || "Unnamed Product"}">${product.name || "Unnamed Product"}</h3>
+      <p class="product-card__description" title="${product.description || ""}">${product.description || "No description available."}</p>
+      <p class="product-card__price" title="Price: ₦${product.price ?? "N/A"}">Price: ₦${product.price ?? "N/A"}</p>
+      <div class="product-card__actions">
+        <a href="pages/product-details.html?id=${encodeURIComponent(product._id || "")}">View Details</a>
+      </div>
     `;
     productContainer.appendChild(productCard);
   });
