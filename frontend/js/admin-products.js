@@ -19,6 +19,8 @@ const paginationInfo = document.querySelector("#pagination-info");
 
 let products = [];
 let currentPage = 1;
+let latestProductRequestId = 0;
+let searchDebounceTimer = null;
 const pageLimit = 12;
 
 const canManageProducts = () => hasRole("inventory-manager", "super-admin");
@@ -276,6 +278,7 @@ function renderPagination(pagination = {}) {
 }
 
 async function loadProducts() {
+  const requestId = ++latestProductRequestId;
   const minPrice = Number(minPriceInput.value);
   const maxPrice = Number(maxPriceInput.value);
 
@@ -285,6 +288,7 @@ async function loadProducts() {
     minPrice > maxPrice
   ) {
     showMessage("Minimum price cannot be greater than maximum price.");
+    setLoading(false);
     return;
   }
 
@@ -293,12 +297,13 @@ async function loadProducts() {
 
   try {
     const response = await api.products.list(getProductQueryParams());
+    if (requestId !== latestProductRequestId) return;
 
     products = getProductList(response);
-
-renderProducts();
-renderPagination(getPagination(response));
+    renderProducts();
+    renderPagination(getPagination(response));
   } catch (error) {
+    if (requestId !== latestProductRequestId) return;
     products = [];
     tableBody.innerHTML = "";
     emptyState.hidden = true;
@@ -308,7 +313,7 @@ renderPagination(getPagination(response));
       error instanceof ApiError ? error.message : "Unable to load products.",
     );
   } finally {
-    setLoading(false);
+    if (requestId === latestProductRequestId) setLoading(false);
   }
 }
 
@@ -355,7 +360,10 @@ tableBody.addEventListener("click", (event) => {
   deleteProduct(deleteButton.dataset.deleteId);
 });
 
-searchInput.addEventListener("input", resetPageAndLoadProducts);
+searchInput.addEventListener("input", () => {
+  window.clearTimeout(searchDebounceTimer);
+  searchDebounceTimer = window.setTimeout(resetPageAndLoadProducts, 250);
+});
 categoryFilter.addEventListener("change", resetPageAndLoadProducts);
 minPriceInput.addEventListener("change", resetPageAndLoadProducts);
 maxPriceInput.addEventListener("change", resetPageAndLoadProducts);
