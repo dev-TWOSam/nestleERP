@@ -24,6 +24,10 @@ const rememberInput = document.querySelector("#remember-me");
 const loginButton = document.querySelector("#login-button");
 const togglePasswordButton = document.querySelector("#toggle-password");
 const messageContainer = document.querySelector("#login-message");
+const temporaryPasswordDialog = document.querySelector("#temporary-password-change-dialog");
+const temporaryPasswordForm = document.querySelector("#temporary-password-change-form");
+const temporaryPasswordMessage = document.querySelector("#temporary-password-change-message");
+const temporaryPasswordCancel = document.querySelector("#temporary-password-change-cancel");
 
 function redirectToDashboard() {
   window.location.replace("./dashboard.html");
@@ -93,7 +97,7 @@ async function handleLogin(event) {
   setButtonLoading(loginButton, true, "Signing in...");
 
   try {
-    await api.users.login(
+    const loginResponse = await api.users.login(
       {
         email: emailInput.value.trim(),
         password: passwordInput.value,
@@ -102,6 +106,19 @@ async function handleLogin(event) {
         remember: rememberInput.checked,
       },
     );
+
+    // A temporary password is intentionally not granted a normal session.
+    // Prompt for a new password before checking the user's administrative role.
+    if (loginResponse?.passwordChangeRequired) {
+      temporaryPasswordForm.reset();
+      temporaryPasswordForm.elements.email.value = emailInput.value.trim();
+      temporaryPasswordForm.elements.currentPassword.value = passwordInput.value;
+      temporaryPasswordMessage.hidden = true;
+      temporaryPasswordMessage.textContent = "";
+      passwordInput.value = "";
+      temporaryPasswordDialog.showModal();
+      return;
+    }
 
     const user = getCurrentUser();
 
@@ -156,6 +173,51 @@ function handlePasswordToggle() {
 
 form.addEventListener("submit", handleLogin);
 togglePasswordButton.addEventListener("click", handlePasswordToggle);
+
+temporaryPasswordForm?.addEventListener("submit", async (event) => {
+  event.preventDefault();
+
+  const payload = Object.fromEntries(new FormData(temporaryPasswordForm).entries());
+  if (payload.newPassword !== payload.confirmPassword) {
+    showPageMessage("New passwords do not match.", {
+      type: "error",
+      container: temporaryPasswordMessage,
+    });
+    return;
+  }
+
+  const submitButton = document.querySelector("#temporary-password-change-submit");
+  setButtonLoading(submitButton, true, "Saving...");
+  try {
+    const response = await api.users.changePassword(payload, { requiresAuth: false });
+    temporaryPasswordDialog.close();
+    temporaryPasswordForm.reset();
+    passwordInput.value = "";
+    emailInput.value = payload.email;
+    showPageMessage(
+      response?.message || "Password changed successfully. Sign in with your new password.",
+      { type: "success", container: messageContainer },
+    );
+    passwordInput.focus();
+  } catch (error) {
+    showPageMessage(
+      error instanceof ApiError ? error.message : "Unable to change the temporary password.",
+      { type: "error", container: temporaryPasswordMessage },
+    );
+  } finally {
+    setButtonLoading(submitButton, false);
+  }
+});
+
+temporaryPasswordCancel?.addEventListener("click", () => {
+  temporaryPasswordDialog.close();
+  temporaryPasswordForm.reset();
+  passwordInput.value = "";
+  passwordInput.focus();
+});
+
+// Keep the first-login prompt explicit if the user presses Escape.
+temporaryPasswordDialog?.addEventListener("cancel", (event) => event.preventDefault());
 
 const redirectedMessage = sessionStorage.getItem("nestleERP.adminLoginMessage");
 
