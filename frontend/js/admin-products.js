@@ -16,6 +16,7 @@ const paginationContainer = document.querySelector("#pagination");
 const previousPageButton = document.querySelector("#previous-page");
 const nextPageButton = document.querySelector("#next-page");
 const paginationInfo = document.querySelector("#pagination-info");
+const pageNumberButtons = document.querySelector("#page-number-buttons");
 
 let products = [];
 let currentPage = 1;
@@ -50,20 +51,40 @@ function getProductList(response) {
 }
 
 function getPagination(response) {
-  return response?.data?.pagination ?? response?.pagination ?? {};
+  const supplied = response?.data?.pagination ?? response?.pagination ?? {};
+  const rawTotalItems = Number(
+    supplied.totalItems ?? supplied.total ??
+    response?.data?.totalItems ?? response?.totalItems ?? response?.count ?? 0,
+  );
+  const totalItems = Number.isFinite(rawTotalItems) && rawTotalItems >= 0 ? rawTotalItems : 0;
+  const limit = Number(supplied.limit ?? response?.data?.limit ?? response?.limit) || pageLimit;
+  const page = Number(supplied.page ?? response?.data?.page ?? response?.page) || currentPage;
+  const suppliedTotalPages = Number(supplied.totalPages ?? response?.data?.totalPages ?? response?.totalPages);
+  const totalPages = Number.isFinite(suppliedTotalPages) && suppliedTotalPages > 0
+    ? suppliedTotalPages
+    : Math.max(1, Math.ceil(totalItems / limit));
+  return { ...supplied, page, limit, totalItems, totalPages };
 }
 
 function getProductQueryParams() {
-  return {
+  const sortBy = sortBySelect.value;
+  const params = {
     search: searchInput.value.trim(),
     category: categoryFilter.value,
     minPrice: minPriceInput.value,
     maxPrice: maxPriceInput.value,
-    sortBy: sortBySelect.value,
-    sortOrder: sortOrderSelect.value,
     page: currentPage,
     limit: pageLimit,
   };
+
+  // The API supports name, price, and creation-date sorting. Category sorting
+  // is applied to the current page below instead of sending an unsupported sort.
+  if (sortBy && sortBy !== "category") {
+    params.sortBy = sortBy;
+    params.sortOrder = sortOrderSelect.value;
+  }
+
+  return params;
 }
 
 function formatPrice(price) {
@@ -184,7 +205,15 @@ function renderProducts() {
     return;
   }
 
-  products.forEach((product) => {
+  const visibleProducts = [...products];
+  if (sortBySelect.value === "category") {
+    const direction = sortOrderSelect.value === "desc" ? -1 : 1;
+    visibleProducts.sort((a, b) =>
+      String(a.category || "").localeCompare(String(b.category || ""), undefined, { sensitivity: "base" }) * direction,
+    );
+  }
+
+  visibleProducts.forEach((product) => {
     const row = document.createElement("tr");
 
     row.innerHTML = `
@@ -266,15 +295,45 @@ function renderPagination(pagination = {}) {
 
   currentPage = page;
 
-  if (totalItems === 0 || totalPages <= 1) {
+  if (!paginationContainer || !previousPageButton || !nextPageButton || !paginationInfo) return;
+  if (totalPages <= 1) {
     paginationContainer.hidden = true;
+    if (pageNumberButtons) pageNumberButtons.replaceChildren();
     return;
   }
 
   paginationContainer.hidden = false;
-  paginationInfo.textContent = `Page ${page} of ${totalPages}`;
+  paginationInfo.textContent = `Page ${page} of ${totalPages} · ${totalItems.toLocaleString()} products`;
   previousPageButton.disabled = page <= 1;
   nextPageButton.disabled = page >= totalPages;
+
+  if (pageNumberButtons) {
+    pageNumberButtons.replaceChildren();
+    const maxVisible = 7;
+    let start = Math.max(1, page - Math.floor(maxVisible / 2));
+    let end = Math.min(totalPages, start + maxVisible - 1);
+    start = Math.max(1, end - maxVisible + 1);
+
+    for (let number = start; number <= end; number += 1) {
+      const button = document.createElement("button");
+      button.type = "button";
+      button.className = "button button--secondary pagination__page";
+      button.textContent = String(number);
+      button.setAttribute("aria-label", `Page ${number}`);
+      if (number === page) {
+        button.classList.add("is-active");
+        button.setAttribute("aria-current", "page");
+        button.disabled = true;
+      }
+      button.addEventListener("click", () => {
+        if (number !== currentPage) {
+          currentPage = number;
+          loadProducts();
+        }
+      });
+      pageNumberButtons.appendChild(button);
+    }
+  }
 }
 
 async function loadProducts() {
@@ -300,8 +359,36 @@ async function loadProducts() {
     if (requestId !== latestProductRequestId) return;
 
     products = getProductList(response);
+    const pagination = getPagination(response);
+
+    const suppliedPagination = response?.data?.pagination ?? response?.pagination ?? {};
+    const hasTotalMetadata = [
+      suppliedPagination.totalItems,
+      suppliedPagination.total,
+      response?.data?.totalItems,
+      response?.totalItems,
+      response?.count,
+    ].some((value) => value !== undefined && value !== null && value !== "");
+
+    if (!hasTotalMetadata) {
+      try {
+        const countResponse = await api.products.list({
+          ...getProductQueryParams(),
+          page: 1,
+          limit: 1000,
+        });
+        if (requestId !== latestProductRequestId) return;
+        const countProducts = getProductList(countResponse);
+        pagination.totalItems = countProducts.length;
+        pagination.totalPages = Math.max(1, Math.ceil(countProducts.length / pageLimit));
+      } catch {
+        // Preserve the product table even if the optional count request fails.
+      }
+    }
+
+    currentPage = Math.min(pagination.page, pagination.totalPages);
     renderProducts();
-    renderPagination(getPagination(response));
+    renderPagination({ ...pagination, page: currentPage });
   } catch (error) {
     if (requestId !== latestProductRequestId) return;
     products = [];
@@ -337,6 +424,7 @@ async function deleteProduct(productId) {
 
     showMessage("Product deleted successfully.", "success");
 
+    if (products.length === 1 && currentPage > 1) currentPage -= 1;
     await loadProducts();
   } catch (error) {
     showMessage(
