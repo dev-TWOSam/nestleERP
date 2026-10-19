@@ -629,10 +629,14 @@ export const api =
       Object.entries(filters).forEach(([key, value]) => {
         if (value !== undefined && value !== null && value !== "") {
           // The backend search controller accepts q (or name), not search.
+          if (key === "sortBy" || key === "sortOrder") return;
           query.set(key === "search" ? "q" : key, String(value));
         }
       });
 
+      if (filters.sortBy && filters.sortOrder) {
+        query.set("sort", `${filters.sortBy}_${filters.sortOrder}`);
+      }
       const queryString = query.toString();
       const url = queryString
         ? `${API_ENDPOINTS.productSearch}?${queryString}`
@@ -654,6 +658,7 @@ export const api =
             value !== null &&
             value !== ""
           ) {
+            if (key === "sortBy" || key === "sortOrder") return;
             query.set(
               key === "search" ? "q" : key,
               String(value),
@@ -662,6 +667,9 @@ export const api =
         },
       );
 
+      if (filters.sortBy && filters.sortOrder) {
+        query.set("sort", `${filters.sortBy}_${filters.sortOrder}`);
+      }
       const queryString =
         query.toString();
 
