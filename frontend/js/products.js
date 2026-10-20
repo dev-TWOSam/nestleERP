@@ -111,34 +111,20 @@ import { api } from "./api.js";
     "#ad1457",
   ];
 
-  function categoryTile(
-    category,
-  ) {
-    const key =
-      category || "";
-
+  function categoryTile(category) {
+    const key = category || "";
     let hash = 0;
 
-    for (
-      let i = 0;
-      i < key.length;
-      i++
-    ) {
-      hash =
-        (
-          hash * 31 +
-          key.charCodeAt(i)
-        ) >>> 0;
+    for (let i = 0; i < key.length; i++) {
+      hash = (
+        hash * 31 +
+        key.charCodeAt(i)
+      ) >>> 0;
     }
 
     return `
       background:
-        ${
-          TILE_PALETTE[
-            hash %
-              TILE_PALETTE.length
-          ]
-        };
+        ${TILE_PALETTE[hash % TILE_PALETTE.length]};
       color:#fff
     `;
   }
@@ -153,7 +139,7 @@ import { api } from "./api.js";
     min: "",
     max: "",
     stock: false,
-    sort: "newest",
+    sort: "name-asc",
     page: 1,
     limit: 12,
   };
@@ -162,54 +148,24 @@ import { api } from "./api.js";
      DOM ELEMENTS
   ========================================================= */
 
-  const $ = (id) =>
-    document.getElementById(id);
+  const $ = (id) => document.getElementById(id);
 
   const el = {
-    search:
-      $("searchInput"),
-
-    sort:
-      $("sortSelect"),
-
-    pageSize:
-      $("pageSizeSelect"),
-
-    categorySelect:
-      $("categorySelect"),
-
-    minPrice:
-      $("minPrice"),
-
-    maxPrice:
-      $("maxPrice"),
-
-    inStock:
-      $("inStockOnly"),
-
-    clear:
-      $("clearFilters"),
-
-    toggle:
-      $("filtersToggle"),
-
-    panel:
-      $("filtersPanel"),
-
-    chips:
-      $("activeFilters"),
-
-    grid:
-      $("productGrid"),
-
-    status:
-      $("statusBox"),
-
-    pagination:
-      $("pagination"),
-
-    summary:
-      $("resultsSummary"),
+    search: $("searchInput"),
+    sort: $("sortSelect"),
+    pageSize: $("pageSizeSelect"),
+    categorySelect: $("categorySelect"),
+    minPrice: $("minPrice"),
+    maxPrice: $("maxPrice"),
+    inStock: $("inStockOnly"),
+    clear: $("clearFilters"),
+    toggle: $("filtersToggle"),
+    panel: $("filtersPanel"),
+    chips: $("activeFilters"),
+    grid: $("productGrid"),
+    status: $("statusBox"),
+    pagination: $("pagination"),
+    summary: $("resultsSummary"),
   };
 
   /* =========================================================
@@ -225,8 +181,7 @@ import { api } from "./api.js";
     totalPages: 1,
   };
 
-  let state =
-    readStateFromUrl();
+  let state = readStateFromUrl();
 
   /*
    * Used to prevent an older API
@@ -239,30 +194,18 @@ import { api } from "./api.js";
      HELPERS
   ========================================================= */
 
-  const money =
-    new Intl.NumberFormat(
-      "en-NG",
-      {
-        style: "currency",
-        currency: "NGN",
-        maximumFractionDigits: 0,
-      },
-    );
+  const money = new Intl.NumberFormat("en-NG", {
+    style: "currency",
+    currency: "NGN",
+    maximumFractionDigits: 0,
+  });
 
-  function formatPrice(
-    value,
-  ) {
-    return money.format(
-      Number(value) || 0,
-    );
+  function formatPrice(value) {
+    return money.format(Number(value) || 0);
   }
 
-  function escapeHtml(
-    value,
-  ) {
-    return String(
-      value ?? "",
-    ).replace(
+  function escapeHtml(value) {
+    return String(value ?? "").replace(
       /[&<>"']/g,
       (character) =>
         ({
@@ -275,23 +218,16 @@ import { api } from "./api.js";
     );
   }
 
-  function debounce(
-    callback,
-    wait,
-  ) {
+  function debounce(callback, wait) {
     let timeout;
 
     return (...args) => {
       clearTimeout(timeout);
 
-      timeout =
-        setTimeout(
-          () =>
-            callback(
-              ...args,
-            ),
-          wait,
-        );
+      timeout = setTimeout(
+        () => callback(...args),
+        wait,
+      );
     };
   }
 
@@ -300,163 +236,97 @@ import { api } from "./api.js";
   ========================================================= */
 
   function readStateFromUrl() {
-    const params =
-      new URLSearchParams(
-        window.location.search,
-      );
+    const params = new URLSearchParams(
+      window.location.search,
+    );
 
-    const numberValue = (
-      value,
-      defaultValue,
-    ) => {
-      const parsed =
-        parseInt(
-          value,
-          10,
-        );
+    const numberValue = (value, defaultValue) => {
+      const parsed = parseInt(value, 10);
 
-      return Number.isFinite(
-        parsed,
-      ) &&
-        parsed > 0
+      return Number.isFinite(parsed) && parsed > 0
         ? parsed
         : defaultValue;
     };
 
     return {
-      q:
-        params.get("q") ||
-        DEFAULTS.q,
+      q: params.get("q") || DEFAULTS.q,
 
-      category:
-        params.get(
-          "category",
-        ) || "",
+      category: params.get("category") || "",
 
-      min:
-        params.get("min") ||
-        "",
+      min: params.get("min") || "",
 
-      max:
-        params.get("max") ||
-        "",
+      max: params.get("max") || "",
 
-      stock:
-        params.get(
-          "stock",
-        ) === "1",
+      stock: params.get("stock") === "1",
 
-      sort:
-        params.get(
-          "sort",
-        ) ||
-        DEFAULTS.sort,
+      sort: (() => {
+        const sort = params.get("sort");
 
-      page:
-        numberValue(
-          params.get(
-            "page",
-          ),
-          1,
-        ),
+        // The old "newest" option is unsupported.
+        // Fall back to alphabetical sorting.
+        const supportedSorts = [
+          "name-asc",
+          "name-desc",
+          "price-asc",
+          "price-desc",
+        ];
 
-      limit:
-        numberValue(
-          params.get(
-            "limit",
-          ),
-          DEFAULTS.limit,
-        ),
+        return supportedSorts.includes(sort)
+          ? sort
+          : DEFAULTS.sort;
+      })(),
+
+      page: numberValue(params.get("page"), 1),
+
+      limit: numberValue(
+        params.get("limit"),
+        DEFAULTS.limit,
+      ),
     };
   }
 
   function writeStateToUrl() {
-    const params =
-      new URLSearchParams();
+    const params = new URLSearchParams();
 
     if (state.q) {
-      params.set(
-        "q",
-        state.q,
-      );
+      params.set("q", state.q);
     }
 
-    if (
-      state.category
-    ) {
-      params.set(
-        "category",
-        state.category,
-      );
+    if (state.category) {
+      params.set("category", state.category);
     }
 
-    if (
-      state.min !== ""
-    ) {
-      params.set(
-        "min",
-        state.min,
-      );
+    if (state.min !== "") {
+      params.set("min", state.min);
     }
 
-    if (
-      state.max !== ""
-    ) {
-      params.set(
-        "max",
-        state.max,
-      );
+    if (state.max !== "") {
+      params.set("max", state.max);
     }
 
     if (state.stock) {
-      params.set(
-        "stock",
-        "1",
-      );
+      params.set("stock", "1");
     }
 
-    if (
-      state.sort !==
-      DEFAULTS.sort
-    ) {
-      params.set(
-        "sort",
-        state.sort,
-      );
+    if (state.sort !== DEFAULTS.sort) {
+      params.set("sort", state.sort);
     }
 
-    if (
-      state.page > 1
-    ) {
-      params.set(
-        "page",
-        state.page,
-      );
+    if (state.page > 1) {
+      params.set("page", state.page);
     }
 
-    if (
-      state.limit !==
-      DEFAULTS.limit
-    ) {
-      params.set(
-        "limit",
-        state.limit,
-      );
+    if (state.limit !== DEFAULTS.limit) {
+      params.set("limit", state.limit);
     }
 
-    const queryString =
-      params.toString();
+    const queryString = params.toString();
 
     history.replaceState(
       null,
       "",
-      window.location
-        .pathname +
-        (
-          queryString
-            ? `?${queryString}`
-            : ""
-        ),
+      window.location.pathname +
+        (queryString ? `?${queryString}` : ""),
     );
   }
 
@@ -466,42 +336,31 @@ import { api } from "./api.js";
 
   function syncControlsFromState() {
     if (el.search) {
-      el.search.value =
-        state.q;
+      el.search.value = state.q;
     }
 
     if (el.sort) {
-      el.sort.value =
-        state.sort;
+      el.sort.value = state.sort;
     }
 
     if (el.pageSize) {
-      el.pageSize.value =
-        String(
-          state.limit,
-        );
+      el.pageSize.value = String(state.limit);
     }
 
-    if (
-      el.categorySelect
-    ) {
-      el.categorySelect.value =
-        state.category;
+    if (el.categorySelect) {
+      el.categorySelect.value = state.category;
     }
 
     if (el.minPrice) {
-      el.minPrice.value =
-        state.min;
+      el.minPrice.value = state.min;
     }
 
     if (el.maxPrice) {
-      el.maxPrice.value =
-        state.max;
+      el.maxPrice.value = state.max;
     }
 
     if (el.inStock) {
-      el.inStock.checked =
-        state.stock;
+      el.inStock.checked = state.stock;
     }
   }
 
@@ -511,48 +370,28 @@ import { api } from "./api.js";
 
   function getSortParams() {
     const sortMap = {
-      newest: {
-        sortBy:
-          "createdAt",
-        sortOrder:
-          "desc",
-      },
-
       "name-asc": {
-        sortBy:
-          "name",
-        sortOrder:
-          "asc",
+        sortBy: "name",
+        sortOrder: "asc",
       },
 
       "name-desc": {
-        sortBy:
-          "name",
-        sortOrder:
-          "desc",
+        sortBy: "name",
+        sortOrder: "desc",
       },
 
       "price-asc": {
-        sortBy:
-          "price",
-        sortOrder:
-          "asc",
+        sortBy: "price",
+        sortOrder: "asc",
       },
 
       "price-desc": {
-        sortBy:
-          "price",
-        sortOrder:
-          "desc",
+        sortBy: "price",
+        sortOrder: "desc",
       },
     };
 
-    return (
-      sortMap[
-        state.sort
-      ] ||
-      sortMap.newest
-    );
+    return sortMap[state.sort] || sortMap["name-asc"];
   }
 
   /* =========================================================
@@ -560,48 +399,31 @@ import { api } from "./api.js";
   ========================================================= */
 
   function buildFilters() {
-    const {
-      sortBy,
-      sortOrder,
-    } =
-      getSortParams();
+    const { sortBy, sortOrder } = getSortParams();
 
     const filters = {
       sortBy,
       sortOrder,
-      page:
-        state.page,
-      limit:
-        state.limit,
+      page: state.page,
+      limit: state.limit,
     };
 
-    const search =
-      state.q.trim();
+    const search = state.q.trim();
 
     if (search) {
-      filters.search =
-        search;
+      filters.search = search;
     }
 
-    if (
-      state.category
-    ) {
-      filters.category =
-        state.category;
+    if (state.category) {
+      filters.category = state.category;
     }
 
-    if (
-      state.min !== ""
-    ) {
-      filters.minPrice =
-        state.min;
+    if (state.min !== "") {
+      filters.minPrice = state.min;
     }
 
-    if (
-      state.max !== ""
-    ) {
-      filters.maxPrice =
-        state.max;
+    if (state.max !== "") {
+      filters.maxPrice = state.max;
     }
 
     return filters;
@@ -618,142 +440,113 @@ import { api } from "./api.js";
      for now.
   ========================================================= */
 
-  function applyFilters(
-    products,
-  ) {
-    const search =
-      state.q
-        .trim()
-        .toLowerCase();
+  function applyFilters(products) {
+    const search = state.q.trim().toLowerCase();
 
     const min =
       state.min === ""
         ? null
-        : Number(
-            state.min,
-          );
+        : Number(state.min);
 
     const max =
       state.max === ""
         ? null
-        : Number(
-            state.max,
-          );
+        : Number(state.max);
 
-    return products.filter(
-      (product) => {
-        const searchableText =
-          [
-            product.id,
-            product.name,
-            product.description,
-            product.category,
-          ]
-            .filter(
-              Boolean,
-            )
-            .join(" ")
-            .toLowerCase();
+    return products.filter((product) => {
+      const searchableText = [
+        product.id,
+        product.name,
+        product.description,
+        product.category,
+      ]
+        .filter(Boolean)
+        .join(" ")
+        .toLowerCase();
 
-        if (
-          search &&
-          !searchableText.includes(
-            search,
-          )
-        ) {
-          return false;
-        }
+      if (
+        search &&
+        !searchableText.includes(search)
+      ) {
+        return false;
+      }
 
-        if (
-          state.category &&
-          product.category !==
-            state.category
-        ) {
-          return false;
-        }
+      if (
+        state.category &&
+        product.category !== state.category
+      ) {
+        return false;
+      }
 
-        if (
-          min !== null &&
-          product.price <
-            min
-        ) {
-          return false;
-        }
+      if (min !== null && product.price < min) {
+        return false;
+      }
 
-        if (
-          max !== null &&
-          product.price >
-            max
-        ) {
-          return false;
-        }
+      if (max !== null && product.price > max) {
+        return false;
+      }
 
-        if (
-          state.stock &&
-          !(
-            product.stock ===
-              null ||
-            product.stock >
-              0
-          )
-        ) {
-          return false;
-        }
+      if (
+        state.stock &&
+        !(product.stock === null || product.stock > 0)
+      ) {
+        return false;
+      }
 
-        return true;
-      },
-    );
+      return true;
+    });
   }
 
   /* =========================================================
      READ PAGINATION RESPONSE
   ========================================================= */
 
-  function readPagination(
-    response,
-    productCount,
-  ) {
+  function readPagination(response, productCount) {
     const raw =
-      response?.data
-        ?.pagination ||
+      response?.data?.pagination ||
       response?.pagination ||
       {};
 
-    const limit =
-      Number(
-        raw.limit,
-      ) ||
-      state.limit;
+    const limit = Number(raw.limit) || state.limit;
 
-    const totalItems =
+    const totalItems = Number(
+      raw.totalItems ??
+        raw.total ??
+        response?.data?.totalItems ??
+        response?.totalItems ??
+        response?.count ??
+        productCount,
+    );
+
+    const safeTotalItems =
+      Number.isFinite(totalItems) && totalItems >= 0
+        ? totalItems
+        : productCount;
+
+    const page =
       Number(
-        raw.totalItems ??
-          raw.total ??
-          productCount,
-      ) || 0;
+        raw.page ??
+          response?.data?.page ??
+          response?.page,
+      ) || state.page;
+
+    const totalPages = Number(
+      raw.totalPages ??
+        response?.data?.totalPages ??
+        response?.totalPages,
+    );
 
     return {
-      page:
-        Number(
-          raw.page,
-        ) ||
-        state.page,
-
+      page,
       limit,
-
-      totalItems,
-
+      totalItems: safeTotalItems,
       totalPages:
-        Number(
-          raw.totalPages,
-        ) ||
-        Math.max(
-          1,
-          Math.ceil(
-            totalItems /
-              limit,
-          ),
-        ),
+        Number.isFinite(totalPages) && totalPages > 0
+          ? totalPages
+          : Math.max(
+              1,
+              Math.ceil(safeTotalItems / limit),
+            ),
     };
   }
 
@@ -761,20 +554,12 @@ import { api } from "./api.js";
      STOCK BADGE
   ========================================================= */
 
-  function stockBadge(
-    product,
-  ) {
-    if (
-      product.stock ===
-      null
-    ) {
+  function stockBadge(product) {
+    if (product.stock === null) {
       return "";
     }
 
-    if (
-      product.stock <=
-      0
-    ) {
+    if (product.stock <= 0) {
       return `
         <span class="badge out">
           Out of stock
@@ -782,10 +567,7 @@ import { api } from "./api.js";
       `;
     }
 
-    if (
-      product.stock <=
-      10
-    ) {
+    if (product.stock <= 10) {
       return `
         <span class="badge">
           Only ${product.stock} left
@@ -800,96 +582,58 @@ import { api } from "./api.js";
      PRODUCT CARD
   ========================================================= */
 
-  function cardHtml(
-    product,
-  ) {
-    const media =
-      product.image
-        ? `
+  function cardHtml(product) {
+    const media = product.image
+      ? `
           <img
-            src="${escapeHtml(
-              product.image,
-            )}"
-            alt="${escapeHtml(
-              product.name,
-            )}"
+            src="${escapeHtml(product.image)}"
+            alt="${escapeHtml(product.name)}"
             loading="lazy"
           />
         `
-        : `
+      : `
           <div
             class="placeholder"
-            style="${categoryTile(
-              product.category,
-            )}"
+            style="${categoryTile(product.category)}"
             aria-hidden="true"
           >
-            ${escapeHtml(
-              product.category,
-            )}
+            ${escapeHtml(product.category)}
           </div>
         `;
 
     return `
       <a
         class="card"
-        href="product-details.html?id=${encodeURIComponent(
-          product.id,
-        )}"
+        href="product-details.html?id=${encodeURIComponent(product.id)}"
       >
-
-        <div
-          class="card-media"
-        >
+        <div class="card-media">
           ${media}
-
-          ${stockBadge(
-            product,
-          )}
+          ${stockBadge(product)}
         </div>
 
-        <div
-          class="card-body"
-        >
-          <h2
-            class="card-title"
-          >
-            ${escapeHtml(
-              product.name,
-            )}
+        <div class="card-body">
+          <h2 class="card-title">
+            ${escapeHtml(product.name)}
           </h2>
 
-          <p
-            class="card-cat"
-          >
-            ${escapeHtml(
-              product.category,
-            )}
+          <p class="card-cat">
+            ${escapeHtml(product.category)}
           </p>
 
           ${
             product.description
               ? `
-                <p
-                  class="card-desc"
-                >
-                  ${escapeHtml(
-                    product.description,
-                  )}
+                <p class="card-desc">
+                  ${escapeHtml(product.description)}
                 </p>
               `
               : ""
           }
 
-          <p
-            class="card-price"
-          >
-            ${formatPrice(
-              product.price,
-            )}
+          <p class="card-price">
+            ${formatPrice(product.price)}
           </p>
         </div>
-
       </a>
     `;
   }
@@ -898,47 +642,23 @@ import { api } from "./api.js";
      LOADING SKELETONS
   ========================================================= */
 
-  function renderSkeletons(
-    count,
-  ) {
-    el.grid.setAttribute(
-      "aria-busy",
-      "true",
-    );
+  function renderSkeletons(count) {
+    el.grid.setAttribute("aria-busy", "true");
 
-    el.grid.innerHTML =
-      Array.from(
-        {
-          length:
-            count,
-        },
-        () => `
-          <div
-            class="card skeleton"
-            aria-hidden="true"
-          >
-            <div
-              class="card-media"
-            ></div>
+    el.grid.innerHTML = Array.from(
+      { length: count },
+      () => `
+        <div class="card skeleton" aria-hidden="true">
+          <div class="card-media"></div>
 
-            <div
-              class="card-body"
-            >
-              <div
-                class="line w60"
-              ></div>
-
-              <div
-                class="line w90"
-              ></div>
-
-              <div
-                class="line w60"
-              ></div>
-            </div>
+          <div class="card-body">
+            <div class="line w60"></div>
+            <div class="line w90"></div>
+            <div class="line w60"></div>
           </div>
-        `,
-      ).join("");
+        </div>
+      `,
+    ).join("");
   }
 
   /* =========================================================
@@ -951,21 +671,11 @@ import { api } from "./api.js";
     actionLabel,
     actionFunction,
   ) {
-    el.status.hidden =
-      false;
+    el.status.hidden = false;
 
     el.status.innerHTML = `
-      <h2>
-        ${escapeHtml(
-          title,
-        )}
-      </h2>
-
-      <p>
-        ${escapeHtml(
-          message,
-        )}
-      </p>
+      <h2>${escapeHtml(title)}</h2>
+      <p>${escapeHtml(message)}</p>
 
       ${
         actionLabel
@@ -975,23 +685,15 @@ import { api } from "./api.js";
               class="btn"
               id="statusAction"
             >
-              ${escapeHtml(
-                actionLabel,
-              )}
+              ${escapeHtml(actionLabel)}
             </button>
           `
           : ""
       }
     `;
 
-    if (
-      actionLabel &&
-      actionFunction
-    ) {
-      const button =
-        $(
-          "statusAction",
-        );
+    if (actionLabel && actionFunction) {
+      const button = $("statusAction");
 
       button?.addEventListener(
         "click",
@@ -1001,11 +703,8 @@ import { api } from "./api.js";
   }
 
   function hideStatus() {
-    el.status.hidden =
-      true;
-
-    el.status.innerHTML =
-      "";
+    el.status.hidden = true;
+    el.status.innerHTML = "";
   }
 
   /* =========================================================
@@ -1016,10 +715,8 @@ import { api } from "./api.js";
     return Boolean(
       state.q ||
         state.category ||
-        state.min !==
-          "" ||
-        state.max !==
-          "" ||
+        state.min !== "" ||
+        state.max !== "" ||
         state.stock,
     );
   }
@@ -1029,53 +726,34 @@ import { api } from "./api.js";
 
     if (state.q) {
       chips.push({
-        label:
-          `Search: ${state.q}`,
-
+        label: `Search: ${state.q}`,
         clear: () => {
           state.q = "";
         },
       });
     }
 
-    if (
-      state.category
-    ) {
+    if (state.category) {
       chips.push({
-        label:
-          state.category,
-
+        label: state.category,
         clear: () => {
-          state.category =
-            "";
+          state.category = "";
         },
       });
     }
 
-    if (
-      state.min !== ""
-    ) {
+    if (state.min !== "") {
       chips.push({
-        label:
-          `Min ${formatPrice(
-            state.min,
-          )}`,
-
+        label: `Min ${formatPrice(state.min)}`,
         clear: () => {
           state.min = "";
         },
       });
     }
 
-    if (
-      state.max !== ""
-    ) {
+    if (state.max !== "") {
       chips.push({
-        label:
-          `Max ${formatPrice(
-            state.max,
-          )}`,
-
+        label: `Max ${formatPrice(state.max)}`,
         clear: () => {
           state.max = "";
         },
@@ -1084,153 +762,84 @@ import { api } from "./api.js";
 
     if (state.stock) {
       chips.push({
-        label:
-          "In stock only",
-
+        label: "In stock only",
         clear: () => {
-          state.stock =
-            false;
+          state.stock = false;
         },
       });
     }
 
-    el.chips.innerHTML =
-      "";
+    el.chips.innerHTML = "";
 
-    chips.forEach(
-      (chip) => {
-        const button =
-          document.createElement(
-            "button",
-          );
+    chips.forEach((chip) => {
+      const button = document.createElement("button");
 
-        button.type =
-          "button";
+      button.type = "button";
+      button.className = "chip";
+      button.textContent = chip.label;
 
-        button.className =
-          "chip";
+      button.setAttribute(
+        "aria-label",
+        `Remove filter: ${chip.label}`,
+      );
 
-        button.textContent =
-          chip.label;
+      button.addEventListener("click", () => {
+        chip.clear();
+        state.page = 1;
+        syncControlsFromState();
+        loadProducts();
+      });
 
-        button.setAttribute(
-          "aria-label",
-          `Remove filter: ${chip.label}`,
-        );
-
-        button.addEventListener(
-          "click",
-          () => {
-            chip.clear();
-
-            state.page =
-              1;
-
-            syncControlsFromState();
-
-            loadProducts();
-          },
-        );
-
-        el.chips.appendChild(
-          button,
-        );
-      },
-    );
+      el.chips.appendChild(button);
+    });
   }
 
   /* =========================================================
      PAGINATION PAGE NUMBERS
   ========================================================= */
 
-  function pageList(
-    current,
-    total,
-  ) {
+  function pageList(current, total) {
     if (total <= 7) {
       return Array.from(
-        {
-          length:
-            total,
-        },
-        (_, index) =>
-          index + 1,
+        { length: total },
+        (_, index) => index + 1,
       );
     }
 
-    const pages =
-      new Set([
-        1,
-        total,
-        current,
-        current - 1,
-        current + 1,
-      ]);
+    const pages = new Set([
+      1,
+      total,
+      current,
+      current - 1,
+      current + 1,
+    ]);
 
-    if (
-      current <= 3
-    ) {
-      [2, 3, 4].forEach(
-        (page) =>
-          pages.add(
-            page,
-          ),
+    if (current <= 3) {
+      [2, 3, 4].forEach((page) => pages.add(page));
+    }
+
+    if (current >= total - 2) {
+      [total - 1, total - 2, total - 3].forEach(
+        (page) => pages.add(page),
       );
     }
 
-    if (
-      current >=
-      total - 2
-    ) {
-      [
-        total - 1,
-        total - 2,
-        total - 3,
-      ].forEach(
-        (page) =>
-          pages.add(
-            page,
-          ),
-      );
-    }
-
-    const sorted =
-      [...pages]
-        .filter(
-          (page) =>
-            page >= 1 &&
-            page <= total,
-        )
-        .sort(
-          (a, b) =>
-            a - b,
-        );
+    const sorted = [...pages]
+      .filter((page) => page >= 1 && page <= total)
+      .sort((a, b) => a - b);
 
     const result = [];
 
-    sorted.forEach(
-      (
-        page,
-        index,
-      ) => {
-        if (
-          index &&
-          page -
-            sorted[
-              index - 1
-            ] >
-            1
-        ) {
-          result.push(
-            "gap",
-          );
-        }
+    sorted.forEach((page, index) => {
+      if (
+        index &&
+        page - sorted[index - 1] > 1
+      ) {
+        result.push("gap");
+      }
 
-        result.push(
-          page,
-        );
-      },
-    );
+      result.push(page);
+    });
 
     return result;
   }
@@ -1239,31 +848,25 @@ import { api } from "./api.js";
      CHANGE PAGE
   ========================================================= */
 
-  async function goToPage(
-    page,
-  ) {
+  async function goToPage(page) {
     if (
       page < 1 ||
-      page >
-        paginationData.totalPages
+      page > paginationData.totalPages
     ) {
       return;
     }
 
-    state.page =
-      page;
+    state.page = page;
 
     await loadProducts();
 
     window.scrollTo({
       top: 0,
-
-      behavior:
-        window.matchMedia(
-          "(prefers-reduced-motion: reduce)",
-        ).matches
-          ? "auto"
-          : "smooth",
+      behavior: window.matchMedia(
+        "(prefers-reduced-motion: reduce)",
+      ).matches
+        ? "auto"
+        : "smooth",
     });
   }
 
@@ -1272,18 +875,12 @@ import { api } from "./api.js";
   ========================================================= */
 
   function renderPagination() {
-    const currentPage =
-      paginationData.page;
+    const currentPage = paginationData.page;
+    const totalPages = paginationData.totalPages;
 
-    const totalPages =
-      paginationData.totalPages;
+    el.pagination.innerHTML = "";
 
-    el.pagination.innerHTML =
-      "";
-
-    if (
-      totalPages <= 1
-    ) {
+    if (totalPages <= 1) {
       return;
     }
 
@@ -1293,38 +890,20 @@ import { api } from "./api.js";
       disabled = false,
       ariaLabel = "",
     ) {
-      const button =
-        document.createElement(
-          "button",
-        );
+      const button = document.createElement("button");
 
-      button.type =
-        "button";
+      button.type = "button";
+      button.className = "page-btn";
+      button.textContent = label;
+      button.disabled = disabled;
 
-      button.className =
-        "page-btn";
-
-      button.textContent =
-        label;
-
-      button.disabled =
-        disabled;
-
-      if (
-        ariaLabel
-      ) {
-        button.setAttribute(
-          "aria-label",
-          ariaLabel,
-        );
+      if (ariaLabel) {
+        button.setAttribute("aria-label", ariaLabel);
       }
 
       button.addEventListener(
         "click",
-        () =>
-          goToPage(
-            page,
-          ),
+        () => goToPage(page),
       );
 
       return button;
@@ -1343,53 +922,28 @@ import { api } from "./api.js";
 
     /* Page numbers */
 
-    pageList(
-      currentPage,
-      totalPages,
-    ).forEach(
+    pageList(currentPage, totalPages).forEach(
       (page) => {
-        if (
-          page ===
-          "gap"
-        ) {
-          const gap =
-            document.createElement(
-              "span",
-            );
+        if (page === "gap") {
+          const gap = document.createElement("span");
 
-          gap.className =
-            "page-gap";
+          gap.className = "page-gap";
+          gap.setAttribute("aria-hidden", "true");
+          gap.textContent = "…";
 
-          gap.setAttribute(
-            "aria-hidden",
-            "true",
-          );
-
-          gap.textContent =
-            "…";
-
-          el.pagination.appendChild(
-            gap,
-          );
-
+          el.pagination.appendChild(gap);
           return;
         }
 
-        const button =
-          createButton(
-            String(page),
-            page,
-            false,
-            `Page ${page}`,
-          );
+        const button = createButton(
+          String(page),
+          page,
+          false,
+          `Page ${page}`,
+        );
 
-        if (
-          page ===
-          currentPage
-        ) {
-          button.classList.add(
-            "active",
-          );
+        if (page === currentPage) {
+          button.classList.add("active");
 
           button.setAttribute(
             "aria-current",
@@ -1397,9 +951,7 @@ import { api } from "./api.js";
           );
         }
 
-        el.pagination.appendChild(
-          button,
-        );
+        el.pagination.appendChild(button);
       },
     );
 
@@ -1409,8 +961,7 @@ import { api } from "./api.js";
       createButton(
         "Next",
         currentPage + 1,
-        currentPage >=
-          totalPages,
+        currentPage >= totalPages,
         "Next page",
       ),
     );
@@ -1422,32 +973,22 @@ import { api } from "./api.js";
 
   function update() {
     renderChips();
-
     writeStateToUrl();
 
-    el.grid.setAttribute(
-      "aria-busy",
-      "false",
-    );
+    el.grid.setAttribute("aria-busy", "false");
 
-    if (
-      !allProducts.length
-    ) {
-      el.grid.innerHTML =
-        "";
+    if (!allProducts.length) {
+      el.grid.innerHTML = "";
 
       /*
-       * If stock is being
-       * filtered locally,
-       * this page might have
-       * no stock even though
-       * another page does.
+       * If stock is being filtered locally,
+       * this page might have no stock even
+       * though another page does.
        */
 
       if (
         state.stock &&
-        paginationData.totalItems >
-          0
+        paginationData.totalItems > 0
       ) {
         renderPagination();
 
@@ -1456,20 +997,12 @@ import { api } from "./api.js";
 
         showStatus(
           "No in-stock products on this page",
-
           "Try another page or turn off the In stock only filter.",
-
           "Show all stock statuses",
-
           () => {
-            state.stock =
-              false;
-
-            state.page =
-              1;
-
+            state.stock = false;
+            state.page = 1;
             syncControlsFromState();
-
             loadProducts();
           },
         );
@@ -1477,28 +1010,19 @@ import { api } from "./api.js";
         return;
       }
 
-      el.pagination.innerHTML =
-        "";
+      el.pagination.innerHTML = "";
+      el.summary.textContent = "0 products found";
 
-      el.summary.textContent =
-        "0 products found";
-
-      if (
-        hasActiveFilters()
-      ) {
+      if (hasActiveFilters()) {
         showStatus(
           "No products match",
-
           "Try a different search term or remove some filters.",
-
           "Clear all filters",
-
           resetAll,
         );
       } else {
         showStatus(
           "No products yet",
-
           "Products added to the system will appear here.",
         );
       }
@@ -1508,43 +1032,30 @@ import { api } from "./api.js";
 
     hideStatus();
 
-    el.grid.innerHTML =
-      allProducts
-        .map(
-          cardHtml,
-        )
-        .join("");
+    el.grid.innerHTML = allProducts
+      .map(cardHtml)
+      .join("");
 
     renderPagination();
 
     if (state.stock) {
       el.summary.textContent =
         `${allProducts.length} in-stock product${
-          allProducts.length ===
-          1
-            ? ""
-            : "s"
+          allProducts.length === 1 ? "" : "s"
         } shown on page ${paginationData.page} of ${paginationData.totalPages}`;
 
       return;
     }
 
     const start =
-      (
-        paginationData.page -
-        1
-      ) *
+      (paginationData.page - 1) *
         paginationData.limit +
       1;
 
-    const end =
-      Math.min(
-        start +
-          allProducts.length -
-          1,
-
-        paginationData.totalItems,
-      );
+    const end = Math.min(
+      start + allProducts.length - 1,
+      paginationData.totalItems,
+    );
 
     el.summary.textContent =
       `Showing ${start}-${end} of ${paginationData.totalItems} products`;
@@ -1562,12 +1073,10 @@ import { api } from "./api.js";
        * Keep user's currently
        * selected page size.
        */
-      limit:
-        state.limit,
+      limit: state.limit,
     };
 
     syncControlsFromState();
-
     loadProducts();
   }
 
@@ -1580,58 +1089,34 @@ import { api } from "./api.js";
 
     el.search?.addEventListener(
       "input",
-
-      debounce(
-        () => {
-          state.q =
-            el.search.value;
-
-          state.page =
-            1;
-
-          loadProducts();
-        },
-
-        300,
-      ),
+      debounce(() => {
+        state.q = el.search.value;
+        state.page = 1;
+        loadProducts();
+      }, 300),
     );
 
     /* Sorting */
 
-    el.sort?.addEventListener(
-      "change",
-      () => {
-        state.sort =
-          el.sort.value;
-
-        state.page =
-          1;
-
-        loadProducts();
-      },
-    );
+    el.sort?.addEventListener("change", () => {
+      state.sort = el.sort.value;
+      state.page = 1;
+      loadProducts();
+    });
 
     /* Items per page */
 
     el.pageSize?.addEventListener(
       "change",
       () => {
-        const nextLimit =
-          Number(
-            el.pageSize.value,
-          );
+        const nextLimit = Number(el.pageSize.value);
 
         state.limit =
-          Number.isInteger(
-            nextLimit,
-          ) &&
-          nextLimit > 0
+          Number.isInteger(nextLimit) && nextLimit > 0
             ? nextLimit
             : DEFAULTS.limit;
 
-        state.page =
-          1;
-
+        state.page = 1;
         loadProducts();
       },
     );
@@ -1641,35 +1126,20 @@ import { api } from "./api.js";
     el.categorySelect?.addEventListener(
       "change",
       () => {
-        state.category =
-          el.categorySelect.value;
-
-        state.page =
-          1;
-
+        state.category = el.categorySelect.value;
+        state.page = 1;
         loadProducts();
       },
     );
 
     /* Price filters */
 
-    const handlePriceChange =
-      debounce(
-        () => {
-          state.min =
-            el.minPrice.value.trim();
-
-          state.max =
-            el.maxPrice.value.trim();
-
-          state.page =
-            1;
-
-          loadProducts();
-        },
-
-        400,
-      );
+    const handlePriceChange = debounce(() => {
+      state.min = el.minPrice.value.trim();
+      state.max = el.maxPrice.value.trim();
+      state.page = 1;
+      loadProducts();
+    }, 400);
 
     el.minPrice?.addEventListener(
       "input",
@@ -1683,69 +1153,44 @@ import { api } from "./api.js";
 
     /* Stock */
 
-    el.inStock?.addEventListener(
-      "change",
-      () => {
-        state.stock =
-          el.inStock.checked;
-
-        state.page =
-          1;
-
-        loadProducts();
-      },
-    );
+    el.inStock?.addEventListener("change", () => {
+      state.stock = el.inStock.checked;
+      state.page = 1;
+      loadProducts();
+    });
 
     /* Clear filters */
 
-    el.clear?.addEventListener(
-      "click",
-      resetAll,
-    );
+    el.clear?.addEventListener("click", resetAll);
 
     /* Mobile filters */
 
-    el.toggle?.addEventListener(
-      "click",
-      () => {
-        if (
-          !el.panel
-        ) {
-          return;
-        }
+    el.toggle?.addEventListener("click", () => {
+      if (!el.panel) {
+        return;
+      }
 
-        const isOpen =
-          el.panel.classList.toggle(
-            "open",
-          );
+      const isOpen = el.panel.classList.toggle("open");
 
-        el.toggle.setAttribute(
-          "aria-expanded",
-          String(
-            isOpen,
-          ),
-        );
-      },
-    );
+      el.toggle.setAttribute(
+        "aria-expanded",
+        String(isOpen),
+      );
+    });
   }
 
   /* =========================================================
      PRODUCT RESPONSE PARSER
   ========================================================= */
 
-  function getProductList(
-    response,
-  ) {
+  function getProductList(response) {
     const products =
-      response?.data
-        ?.products ??
+      response?.data?.products ??
       response?.products ??
       response?.data ??
       response;
 
-    return Array.isArray(
-      products,
-    )
+    return Array.isArray(products)
       ? products
       : [];
   }
@@ -1754,66 +1199,39 @@ import { api } from "./api.js";
      CATEGORY RESPONSE PARSER
   ========================================================= */
 
-  function getCategoryList(
-    response,
-  ) {
+  function getCategoryList(response) {
     const categories =
-      response?.data
-        ?.categories ??
+      response?.data?.categories ??
       response?.categories ??
       response?.data ??
       response;
 
-    if (
-      !Array.isArray(
-        categories,
-      )
-    ) {
+    if (!Array.isArray(categories)) {
       return [];
     }
 
-    const unique =
-      new Map();
+    const unique = new Map();
 
-    categories.forEach(
-      (category) => {
-        const value =
-          String(
-            category ??
-              "",
-          ).trim();
+    categories.forEach((category) => {
+      const value = String(category ?? "").trim();
 
-        if (!value) {
-          return;
-        }
+      if (!value) {
+        return;
+      }
 
-        const key =
-          value.toLowerCase();
+      const key = value.toLowerCase();
 
-        if (
-          !unique.has(
-            key,
-          )
-        ) {
-          unique.set(
-            key,
-            value,
-          );
-        }
-      },
-    );
+      if (!unique.has(key)) {
+        unique.set(key, value);
+      }
+    });
 
-    return [
-      ...unique.values(),
-    ].sort(
+    return [...unique.values()].sort(
       (a, b) =>
         a.localeCompare(
           b,
           undefined,
-          {
-            sensitivity:
-              "base",
-          },
+          { sensitivity: "base" },
         ),
     );
   }
@@ -1824,45 +1242,28 @@ import { api } from "./api.js";
 
   async function loadCategories() {
     try {
-      const response =
-        await api.products.categories();
+      const response = await api.products.categories();
 
-      const categories =
-        getCategoryList(
-          response,
-        );
+      const categories = getCategoryList(response);
 
-      el.categorySelect.innerHTML =
-        `
-          <option value="">
-            All categories
-          </option>
-        `;
+      el.categorySelect.innerHTML = `
+        <option value="">
+          All categories
+        </option>
+      `;
 
-      categories.forEach(
-        (category) => {
-          const option =
-            document.createElement(
-              "option",
-            );
+      categories.forEach((category) => {
+        const option = document.createElement("option");
 
-          option.value =
-            category;
+        option.value = category;
+        option.textContent = category;
 
-          option.textContent =
-            category;
-
-          el.categorySelect.appendChild(
-            option,
-          );
-        },
-      );
+        el.categorySelect.appendChild(option);
+      });
 
       /*
-       * Preserve category
-       * from URL even if
-       * backend doesn't
-       * return it anymore.
+       * Preserve category from URL even if
+       * backend doesn't return it anymore.
        */
 
       if (
@@ -1873,24 +1274,15 @@ import { api } from "./api.js";
             state.category.toLowerCase(),
         )
       ) {
-        const option =
-          document.createElement(
-            "option",
-          );
+        const option = document.createElement("option");
 
-        option.value =
-          state.category;
+        option.value = state.category;
+        option.textContent = state.category;
 
-        option.textContent =
-          state.category;
-
-        el.categorySelect.appendChild(
-          option,
-        );
+        el.categorySelect.appendChild(option);
       }
 
-      el.categorySelect.value =
-        state.category;
+      el.categorySelect.value = state.category;
     } catch (error) {
       console.error(
         "Unable to load product categories:",
@@ -1898,39 +1290,24 @@ import { api } from "./api.js";
       );
 
       /*
-       * Product listing
-       * should still work
-       * even if category
-       * loading fails.
+       * Product listing should still work
+       * even if category loading fails.
        */
 
-      el.categorySelect.innerHTML =
-        `
-          <option value="">
-            All categories
-          </option>
-        `;
+      el.categorySelect.innerHTML = `
+        <option value="">
+          All categories
+        </option>
+      `;
 
-      if (
-        state.category
-      ) {
-        const option =
-          document.createElement(
-            "option",
-          );
+      if (state.category) {
+        const option = document.createElement("option");
 
-        option.value =
-          state.category;
+        option.value = state.category;
+        option.textContent = state.category;
 
-        option.textContent =
-          state.category;
-
-        el.categorySelect.appendChild(
-          option,
-        );
-
-        el.categorySelect.value =
-          state.category;
+        el.categorySelect.appendChild(option);
+        el.categorySelect.value = state.category;
       }
     }
   }
@@ -1940,140 +1317,118 @@ import { api } from "./api.js";
   ========================================================= */
 
   async function loadProducts() {
-    const thisRequest =
-      ++requestId;
+    const thisRequest = ++requestId;
 
     hideStatus();
 
-    el.pagination.innerHTML =
-      "";
+    el.pagination.innerHTML = "";
+    el.summary.textContent = "Loading products…";
 
-    el.summary.textContent =
-      "Loading products…";
-
-    renderSkeletons(
-      Math.min(
-        state.limit,
-        12,
-      ),
-    );
+    renderSkeletons(Math.min(state.limit, 12));
 
     try {
       /*
-       * buildFilters()
-       * produces:
-       *
-       * search
-       * category
-       * minPrice
-       * maxPrice
-       * sortBy
-       * sortOrder
-       * page
-       * limit
+       * buildFilters() produces:
+       * search, category, minPrice, maxPrice,
+       * sortBy, sortOrder, page and limit.
        */
 
-      const response =
-        await api.products.list(
-          buildFilters(),
-        );
+      const response = await api.products.list(
+        buildFilters(),
+      );
 
       /*
-       * Ignore stale API
-       * responses.
+       * Ignore stale API responses.
        */
 
-      if (
-        thisRequest !==
-        requestId
-      ) {
+      if (thisRequest !== requestId) {
         return;
       }
 
-      const rawProducts =
-        getProductList(
-          response,
-        );
+      const rawProducts = getProductList(response);
 
-      paginationData =
-        readPagination(
-          response,
-          rawProducts.length,
-        );
+      paginationData = readPagination(
+        response,
+        rawProducts.length,
+      );
+
+      // This backend currently returns { products, page, limit } without a
+      // total count. Ask for a large first page so the UI can calculate the
+      // real total and render pagination instead of treating the current page
+      // length as the entire catalogue.
+      const suppliedPagination =
+        response?.data?.pagination || response?.pagination || {};
+      const hasTotalMetadata = [
+        suppliedPagination.totalItems,
+        suppliedPagination.total,
+        response?.data?.totalItems,
+        response?.totalItems,
+        response?.count,
+      ].some((value) => value !== undefined && value !== null && value !== "");
+
+      if (!hasTotalMetadata) {
+        try {
+          const countResponse = await api.products.list({
+            ...buildFilters(),
+            page: 1,
+            limit: 1000,
+          });
+          if (thisRequest !== requestId) return;
+          const countProducts = getProductList(countResponse);
+          paginationData.totalItems = countProducts.length;
+          paginationData.totalPages = Math.max(
+            1,
+            Math.ceil(countProducts.length / paginationData.limit),
+          );
+        } catch {
+          // Keep the normal page usable if the optional count request fails.
+        }
+      }
+
+      state.page = paginationData.page;
+      state.limit = paginationData.limit;
 
       /*
-       * Example:
-       *
-       * User is on page 4,
-       * applies a filter,
-       * filtered results only
-       * have 2 pages.
-       *
-       * Move user back to
-       * the last valid page.
+       * If a filter reduces the number of pages,
+       * move the user back to the last valid page.
        */
 
       if (
-        paginationData.totalItems >
-          0 &&
-        paginationData.totalPages >
-          0 &&
-        state.page >
-          paginationData.totalPages
+        paginationData.totalItems > 0 &&
+        paginationData.totalPages > 0 &&
+        state.page > paginationData.totalPages
       ) {
-        state.page =
-          paginationData.totalPages;
-
+        state.page = paginationData.totalPages;
         await loadProducts();
-
         return;
       }
 
-      allProducts =
-        applyFilters(
-          rawProducts.map(
-            normalize,
-          ),
-        );
+      allProducts = applyFilters(
+        rawProducts.map(normalize),
+      );
 
       update();
     } catch (error) {
       /*
-       * Ignore stale failed
-       * requests too.
+       * Ignore stale failed requests too.
        */
 
-      if (
-        thisRequest !==
-        requestId
-      ) {
+      if (thisRequest !== requestId) {
         return;
       }
 
       allProducts = [];
+      el.grid.innerHTML = "";
 
-      el.grid.innerHTML =
-        "";
-
-      el.grid.setAttribute(
-        "aria-busy",
-        "false",
-      );
-
-      el.pagination.innerHTML =
-        "";
-
-      el.summary.textContent =
-        "Unable to load products";
+      el.grid.setAttribute("aria-busy", "false");
+      el.pagination.innerHTML = "";
+      el.summary.textContent = "Unable to load products";
 
       showStatus(
         "Unable to load products",
-
         error?.message ||
           "Please check your connection and try again.",
-
         "Try again",
-
         loadProducts,
       );
     }
@@ -2085,8 +1440,7 @@ import { api } from "./api.js";
 
   async function init() {
     /*
-     * Make sure required
-     * elements exist.
+     * Make sure required elements exist.
      */
 
     if (
@@ -2102,15 +1456,11 @@ import { api } from "./api.js";
     }
 
     syncControlsFromState();
-
     bindEvents();
 
     /*
-     * Load categories and
-     * products independently.
-     *
-     * Category failure should
-     * not stop product loading.
+     * Load categories and products independently.
+     * Category failure should not stop product loading.
      */
 
     await Promise.allSettled([

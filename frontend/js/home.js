@@ -26,10 +26,22 @@ function getProductList(response) {
 }
 
 // Pagination Data
-function getPagination(response) {
-    return (
-      response?.data?.pagination || response?.pagination || null
+function getPagination(response, productCount = 0) {
+    const raw = response?.data?.pagination || response?.pagination || {};
+    const page = Number(raw.page ?? response?.data?.page ?? response?.page ?? currentPage) || currentPage;
+    const pageLimit = Number(raw.limit ?? response?.data?.limit ?? response?.limit ?? limit) || limit;
+    const totalItems = Number(
+      raw.totalItems ?? raw.total ?? response?.data?.totalItems ?? response?.totalItems ?? response?.count ?? productCount
     );
+    const explicitTotalPages = Number(raw.totalPages ?? response?.data?.totalPages ?? response?.totalPages);
+    return {
+      page,
+      limit: pageLimit,
+      totalItems: Number.isFinite(totalItems) && totalItems >= 0 ? totalItems : productCount,
+      totalPages: Number.isFinite(explicitTotalPages) && explicitTotalPages > 0
+        ? explicitTotalPages
+        : Math.max(1, Math.ceil((Number.isFinite(totalItems) && totalItems >= 0 ? totalItems : productCount) / pageLimit)),
+    };
 }
 
 // Display Products
@@ -86,6 +98,28 @@ function updatePagination() {
     }
 }
 
+// Populate the category filter from all categories in the database.
+async function loadCategories() {
+  try {
+    const response = await api.products.categories();
+    const categories = response?.data?.categories || response?.categories || [];
+    const selected = categoryFilter?.value || "";
+    if (!categoryFilter || !Array.isArray(categories)) return;
+    categoryFilter.innerHTML = '<option value="">All categories</option>';
+    [...new Set(categories.map((item) => String(item || "").trim()).filter(Boolean))]
+      .sort((a, b) => a.localeCompare(b, undefined, { sensitivity: "base" }))
+      .forEach((category) => {
+        const option = document.createElement("option");
+        option.value = category;
+        option.textContent = category;
+        categoryFilter.appendChild(option);
+      });
+    categoryFilter.value = selected;
+  } catch (error) {
+    console.error("Unable to load product categories:", error);
+  }
+}
+
 // Load Products
 async function loadProducts() {
   try {
@@ -115,15 +149,44 @@ const sortValue = sortSelect?.value || "";
 
 if (sortValue) {
   const [sortBy, sortOrder] = sortValue.split("-");
-  filters.sortBy = sortBy;
-  filters.sortOrder = sortOrder;
+  filters.sort = `${sortBy}_${sortOrder}`;
 }
 
 const response = currentSearch
   ? await api.products.search(filters)
   : await api.products.list(filters);
 const products = getProductList(response);
-pagination = getPagination(response);
+
+// Some API responses contain only the current page and omit totalItems/totalPages.
+// In that case, request the filtered result set with a larger limit so the
+// Previous/Next controls can determine whether additional pages exist.
+const rawPagination = response?.data?.pagination || response?.pagination || {};
+const hasTotalMetadata = [
+  rawPagination.totalItems,
+  rawPagination.total,
+  rawPagination.totalPages,
+  response?.data?.totalItems,
+  response?.totalItems,
+  response?.count,
+].some((value) => value !== undefined && value !== null && value !== "");
+
+pagination = getPagination(response, products.length);
+if (!hasTotalMetadata) {
+  try {
+    const countFilters = { ...filters, page: 1, limit: 1000 };
+    const countResponse = currentSearch
+      ? await api.products.search(countFilters)
+      : await api.products.list(countFilters);
+    const allMatchingProducts = getProductList(countResponse);
+    pagination.totalItems = allMatchingProducts.length;
+    pagination.totalPages = Math.max(1, Math.ceil(allMatchingProducts.length / limit));
+  } catch (countError) {
+    console.warn("Could not calculate the full product count; using API pagination data.", countError);
+  }
+}
+
+// Keep the requested page in sync with the pagination data returned by the API.
+pagination.page = currentPage;
 displayProducts(products);
 updatePagination();
 } catch (error) {
@@ -154,11 +217,11 @@ async function searchProducts() {
 }
 
 // Search Button
-searchButton.addEventListener("click", searchProducts);
+searchButton?.addEventListener("click", searchProducts);
 
 
 // Press Enter To Search
-searchInput.addEventListener("keydown", function(event) {
+searchInput?.addEventListener("keydown", function(event) {
   if(event.key === "Enter") {
     event.preventDefault();
     searchProducts();
@@ -166,40 +229,42 @@ searchInput.addEventListener("keydown", function(event) {
 });
 
 // Previous Page
-previousPageButton.addEventListener("click", function(){
-  if(currentPage > 1){
+previousPageButton?.addEventListener("click", function(){
+  if (currentPage > 1) {
     currentPage--;
     loadProducts();
   }
 });
 
 // Next Page
-nextPageButton.addEventListener("click", function(){
-  if(pagination && currentPage < Number(pagination.totalPages)) {
+nextPageButton?.addEventListener("click", function(){
+  const totalPages = Number(pagination?.totalPages || 1);
+  if (currentPage < totalPages) {
     currentPage++;
     loadProducts();
   }
 });
 // Sorting
-sortSelect.addEventListener("change", function() {
+sortSelect?.addEventListener("change", function() {
   currentPage = 1;
   loadProducts();
 });
 // Filtering
-categoryFilter.addEventListener("change", function() {
+categoryFilter?.addEventListener("change", function() {
   currentPage = 1;
   loadProducts();
 });
 
-minPriceInput.addEventListener("change", function() {
+minPriceInput?.addEventListener("change", function() {
   currentPage = 1;
   loadProducts();
 });
 
-maxPriceInput.addEventListener("change", function() {
+maxPriceInput?.addEventListener("change", function() {
   currentPage = 1;
   loadProducts();
 });
 
 
+loadCategories();
 loadProducts();
