@@ -17,6 +17,7 @@ import {
 
 const ADMIN_ROLES = [APP_CONFIG.roles.inventoryManager, APP_CONFIG.roles.superAdmin];
 const SUPER_ADMIN_ROLE = APP_CONFIG.roles.superAdmin;
+const INVENTORY_MANAGER_ROLE = APP_CONFIG.roles.inventoryManager;
 
 const dashboardMessage = document.querySelector("#dashboard-message");
 const productCount = document.querySelector("#product-count");
@@ -177,9 +178,25 @@ function renderRoleSummary() {
 
 async function loadProductSummary() {
   try {
-    const response = await api.products.list();
-    const products = Array.isArray(response?.products) ? response.products : [];
-    productCount.textContent = products.length.toLocaleString();
+    const response = await api.products.list({ page: 1, limit: 1000 });
+    const totalItems = Number(
+      response?.pagination?.totalItems ??
+      response?.pagination?.total ??
+      response?.data?.pagination?.totalItems ??
+      response?.data?.pagination?.total ??
+      response?.totalItems ??
+      response?.count,
+    );
+    const products = Array.isArray(response?.products)
+      ? response.products
+      : Array.isArray(response?.data?.products)
+        ? response.data.products
+        : [];
+    productCount.textContent = (
+      Number.isFinite(totalItems) && totalItems >= 0
+        ? totalItems
+        : products.length
+    ).toLocaleString();
   } catch (error) {
     productCount.textContent = "—";
 
@@ -833,8 +850,8 @@ roleDialog.addEventListener("click", (event) => {
 });
 
 function closeChangePasswordDialog() {
-  changePasswordDialog.close();
-  changePasswordForm.reset();
+  if (changePasswordDialog?.open) changePasswordDialog.close();
+  changePasswordForm?.reset();
 }
 
 
@@ -842,6 +859,8 @@ async function changePassword(
   event,
 ) {
   event.preventDefault();
+  if (!changePasswordForm || !changePasswordDialog) return;
+
   if (!hasRole(SUPER_ADMIN_ROLE, INVENTORY_MANAGER_ROLE)) {
   showPageMessage("You are not authorized to change your password.", {
     type: "error",
@@ -857,6 +876,19 @@ async function changePassword(
       ).entries(),
     );
 
+  // The authenticated account is already known. The backend password-change
+  // endpoint currently expects an email identifier, so supply it from the
+  // signed-in session instead of asking the user to re-enter it.
+  payload.email = currentUser?.email || getCurrentUser()?.email || "";
+
+  if (!payload.email) {
+    showPageMessage(
+      "Unable to identify the signed-in account. Please sign in again.",
+      { type: "error", container: dashboardMessage },
+    );
+    return;
+  }
+
   if (
     payload.newPassword !==
     payload.confirmPassword
@@ -870,6 +902,15 @@ async function changePassword(
       },
     );
 
+    return;
+  }
+
+  const passwordPattern = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@#$!%*?&_])[A-Za-z\d@#$!%*?&_]{12,30}$/;
+  if (!passwordPattern.test(payload.newPassword || "")) {
+    showPageMessage(
+      "New password must be 12–30 characters and include uppercase, lowercase, a number, and a special character.",
+      { type: "error", container: dashboardMessage },
+    );
     return;
   }
 
@@ -924,8 +965,9 @@ changePasswordOpen
   ?.addEventListener(
     "click",
     () => {
-      changePasswordDialog
-        .showModal();
+      if (typeof changePasswordDialog?.showModal === "function") {
+        changePasswordDialog.showModal();
+      }
     },
   );
 
